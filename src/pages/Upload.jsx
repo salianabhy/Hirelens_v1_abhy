@@ -6,7 +6,7 @@ import Icon from '../components/Icon';
 
 pdfjs.GlobalWorkerOptions.workerSrc = ''; // Handled dynamically in extractText
 import Btn from '../components/Btn';
-import Groq from 'groq-sdk';
+import { callGroq } from '../services/ai';
 
 const STEPS = [
   'Parsing document structure…',
@@ -31,25 +31,6 @@ const Upload = ({ go, user, onAuth, setResults }) => {
     setDragging(false);
     pick(e.dataTransfer.files[0]);
   }, []);
-
-  const uploadToCloudinary = async (file) => {
-    const cloudName = 'dsqbej90e';
-    const uploadPreset = 'hirelens_unsigned';
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
-
-    const type = file.type === 'application/pdf' ? 'raw' : 'auto';
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${type}/upload`, {
-      method: 'POST',
-      body: formData
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
-    return data.secure_url;
-  };
 
   const extractText = async (file) => {
     if (file.type !== 'application/pdf') return ""; 
@@ -78,60 +59,21 @@ const Upload = ({ go, user, onAuth, setResults }) => {
   };
 
   const generateAIAssessment = async (text, fileName, targetRole) => {
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing VITE_GROQ_API_KEY in .env.local file. Please add your Groq API key.");
-    }
-    const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-
+    const truncatedText = text?.substring(0, 10000) || ""; 
     const prompt = `
       You are an expert ATS (Applicant Tracking System) and senior technical recruiter.
-      Extract and evaluate the following resume against the target role (if provided).
-      Target Role: ${targetRole || 'General/Unspecified'}
-      Resume Text:
-      ${text}
-
-      Evaluate the resume strictly and provide a JSON response with exactly this structure:
-      {
-        "score": number (0-100 overall score),
-        "ats": number (0-100 ATS compatibility),
-        "keyword": number (0-100 keyword match),
-        "formatting": number (0-100 structure/formatting),
-        "impact": number (0-100 impact metrics),
-        "signals": {
-          "action_verbs": ["spearheaded", "architected"],
-          "tech_keywords": ["react", "node", "aws"],
-          "metrics": ["20% increase", "10k+ users"]
-        },
-        "issues": [
-          { "label": "Short title", "sev": "Critical" | "High" | "Medium", "desc": "Detailed desc" }
-        ],
-        "improvements": ["Actionable advice 1", "Advice 2"]
-      }
-      Return ONLY valid JSON. Do not include markdown formatting or backticks around the json block.
+      Evaluate the following resume against the target role: ${targetRole || 'General/Unspecified'}.
+      Resume Text: ${truncatedText}
+      Provide a JSON response with score, ats, keyword, formatting, impact, signals, issues, and improvements.
     `;
-
     try {
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model: "llama-3.1-8b-instant",
-        response_format: { type: "json_object" }
-      });
-      
+      const completion = await callGroq(prompt);
       let textContent = completion.choices[0]?.message?.content || "{}";
-      
-      // Make parsing more robust
       textContent = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
       
-      let parsed;
-      try {
-        parsed = JSON.parse(textContent);
-      } catch (parseErr) {
-        console.error("Failed to parse Groq JSON:", textContent);
-        throw new Error("AI returned an invalid format. Please try again.");
-      }
-      
+      let parsed = JSON.parse(textContent);
       const finalScore = parsed.score || 45;
+
       return {
         name: fileName,
         score: finalScore,
@@ -144,7 +86,7 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         improvements: parsed.improvements || [],
         date: new Date().toISOString(),
         risk: finalScore < 60 ? 'High Risk' : finalScore < 80 ? 'Medium Risk' : 'Low Risk',
-        text: text
+        text: truncatedText
       };
     } catch (err) {
       console.error("Groq API Error:", err);
@@ -167,18 +109,10 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         const analysis = await generateAIAssessment(text, file.name || 'Resume', role);
         setResults(analysis);
 
-        let fileUrl = null;
-        try {
-          fileUrl = await uploadToCloudinary(file);
-        } catch (uErr) {
-          console.error("Cloudinary failed, proceeding without link:", uErr);
-        }
-
         if (user?.uid) {
           const safeName = (file.name || 'document').replace(/[^a-zA-Z0-9]/g, '_');
           await setDoc(doc(db, 'users', user.uid, 'scans', safeName), {
             ...analysis,
-            fileUrl,
           });
         }
         return true;

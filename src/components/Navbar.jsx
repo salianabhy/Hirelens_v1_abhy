@@ -61,14 +61,15 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
                     {user.name}
                   </span>
                 </div>
-                <Btn 
-                  v={dark ? 'ghost-dark' : 'ghost'} 
-                  sz="xs" pill 
+                <button 
                   onClick={onLogout}
-                  style={{ fontSize: '.75rem', padding: '6px 12px' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  title="Sign out"
                 >
-                  Sign out
-                </Btn>
+                  <Icon id="logout" size={18} color="var(--red)" />
+                </button>
               </div>
             ) : (
               <>
@@ -119,9 +120,9 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
             {user ? (
               <button
                 onClick={() => { onLogout(); setMenuOpen(false); }}
-                style={{ display:'block', width:'100%', textAlign:'left', padding:'12px 14px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, fontSize:'.95rem', color: 'var(--red)', borderRadius:11, transition:'background .15s' }}
+                style={{ display:'flex', alignItems: 'center', gap: 10, width:'100%', textAlign:'left', padding:'12px 14px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, fontSize:'.95rem', color: 'var(--red)', borderRadius:11, transition:'background .15s' }}
               >
-                Sign out
+                <Icon id="logout" size={17} color="var(--red)" /> Sign out
               </button>
             ) : (
               <button

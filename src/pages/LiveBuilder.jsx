@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Groq from 'groq-sdk';
+import { callGroq } from '../services/ai';
 import Icon from '../components/Icon';
 import Btn from '../components/Btn';
 import Badge from '../components/Badge';
@@ -48,11 +48,6 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
           return;
         }
 
-        const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-        if (!apiKey) throw new Error("Missing API Key");
-        
-        const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-        
         const prompt = `You are an expert ATS resume parser. I will provide raw text extracted from a PDF. Extract and format the user's details perfectly into the exact JSON structure below.
         Rewrite all experience bullet points to be highly professional, ATS-friendly, and impact-driven using strong verbs. Limit descriptions to 1-2 concise sentences per entry.
 
@@ -82,11 +77,8 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
         
         Return ONLY valid JSON.`;
 
-        const completion = await groq.chat.completions.create({
-          messages: [{ role: "user", content: prompt }],
-          model: "llama-3.1-8b-instant",
-          response_format: { type: "json_object" }
-        });
+        const completion = await callGroq(prompt);
+
 
         let parsed;
         try {
@@ -149,17 +141,10 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
     if (!currentText.trim() || loadingAI) return;
     setLoadingAI(true);
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY");
-      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-      
       const prompt = `Rewrite the following resume textual bullet point to make it highly professional, impact-driven, and ATS-friendly. Use strong action verbs and metrics if possible. Limit to one sentence.
       Original Text: "${currentText}"`;
+      const completion = await callGroq(prompt);
 
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model: "llama-3.1-8b-instant"
-      });
 
       const improved = completion.choices[0]?.message?.content?.replace(/^"|"$|^\*|\*$/g, '').trim() || currentText;
 
@@ -181,17 +166,10 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
     if (!jdBuffer.trim() || loadingAI) return;
     setLoadingAI(true);
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY");
-      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-      
       const prompt = `Extract top 6 critical technical hard skills from this Job Description. Return them strictly as a comma-separated list. Nothing else.
       JD: "${jdBuffer}"`;
+      const completion = await callGroq(prompt);
 
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model: "llama-3.1-8b-instant"
-      });
 
       const extracted = completion.choices[0]?.message?.content?.split(',').map(s => s.trim()) || [];
       if (extracted.length > 0) {
@@ -451,24 +429,19 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <p style={{ fontSize: '.84rem', color: 'var(--ts)' }}>Use the ⚡ button on each entry to AI-rewrite for ATS impact.</p>
-                  <Btn v="ind" sz="xs" pill onClick={async () => {
-                    if (loadingAI || data.experience.length === 0) return;
-                    setLoadingAI(true);
-                    try {
-                      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-                      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-                      const improved = await Promise.all(data.experience.map(async (exp) => {
-                        if (!exp.desc) return exp;
-                        const c = await groq.chat.completions.create({
-                          messages: [{ role: 'user', content: `Rewrite this resume bullet as a single impact-driven, ATS-optimized sentence using strong action verbs and metrics. Original: "${exp.desc}"` }],
-                          model: 'llama-3.1-8b-instant'
-                        });
-                        return { ...exp, desc: c.choices[0]?.message?.content?.replace(/^"|"$|^\*|\*$/g, '').trim() || exp.desc };
-                      }));
-                      update('experience', improved);
-                    } catch(e) { console.error(e); }
-                    setLoadingAI(false);
-                  }} disabled={loadingAI}>
+                    <Btn v="ind" sz="xs" pill onClick={async () => {
+                      if (loadingAI || data.experience.length === 0) return;
+                      setLoadingAI(true);
+                      try {
+                        const improved = await Promise.all(data.experience.map(async (exp) => {
+                          if (!exp.desc) return exp;
+                          const c = await callGroq(`Rewrite this resume bullet as a single impact-driven, ATS-optimized sentence using strong action verbs and metrics. Original: "${exp.desc}"`);
+                          return { ...exp, desc: c.choices[0]?.message?.content?.replace(/^"|"$|^\*|\*$/g, '').trim() || exp.desc };
+                        }));
+                        update('experience', improved);
+                      } catch(e) { console.error(e); }
+                      setLoadingAI(false);
+                    }} disabled={loadingAI}>
                     {loadingAI ? '...' : <><Icon id="zap" size={10} color="white" /> Optimize All</>}
                   </Btn>
                 </div>
@@ -603,9 +576,9 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
            <Btn v={showATS ? 'ind' : 'light'} sz="sm" pill onClick={() => setShowATS(!showATS)}><Icon id="target" size={14} color={showATS ? 'white' : 'var(--tp)'} /> {showATS ? 'ATS Active' : 'Recruiter Mode'}</Btn>
         </div>
 
-        <div id="resume-preview" style={{ 
-          width: '595px', minHeight: '842px', background: 'white', boxShadow: '0 30px 60px rgba(0,0,0,.08)', 
-          padding: '50px 65px', display: 'flex', flexDirection: 'column', color: '#000', position: 'relative', fontFamily: "'Inter', sans-serif"
+        <div id="resume-preview" className="a4-preview" style={{ 
+          width: '100%', maxWidth: '595px', minHeight: '842px', background: 'white', boxShadow: '0 30px 60px rgba(0,0,0,.08)', 
+          padding: window.innerWidth > 640 ? '50px 65px' : '30px 25px', display: 'flex', flexDirection: 'column', color: '#000', position: 'relative', fontFamily: "'Inter', sans-serif", wordBreak: 'break-word'
         }}>
            
            {/* ATS Terminal Overlay */}

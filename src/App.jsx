@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
 import { auth, db } from './firebase';
@@ -12,6 +12,30 @@ import Dashboard from './pages/Dashboard';
 import ResumeBuilder from './pages/ResumeBuilder';
 import LiveBuilder from './pages/LiveBuilder';
 import PortfolioMaker from './pages/PortfolioMaker';
+import Icon from './components/Icon';
+import Btn from './components/Btn';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s1)', padding: 20 }}>
+          <div className="card ru" style={{ maxWidth: 400, padding: 40, textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid var(--bl)' }}>
+               <Icon id="warn" size={24} color="var(--red)" />
+            </div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 12 }}>Something went wrong</h2>
+            <p style={{ color: 'var(--ts)', fontSize: '.9rem', marginBottom: 24 }}>The app encountered an unexpected error. This usually happens during high traffic.</p>
+            <Btn v="dark" pill onClick={() => window.location.reload()}>Reload Hirelens</Btn>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Default structured resume data — used by Portfolio Maker as the live source of truth
 const DEFAULT_RESUME = {
@@ -71,6 +95,7 @@ const App = () => {
     try {
       await signOut(auth);
       setUser(null);
+      setShowLogout(false);
       go('landing');
       setResults(null);
       setResumeData(DEFAULT_RESUME);
@@ -138,10 +163,10 @@ const App = () => {
   };
 
   const LogoutModal = () => (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }} onClick={() => setShowLogout(false)} />
-      <div className="card ru" style={{ position: 'relative', width: '100%', maxWidth: 380, padding: 32, textAlign: 'center', borderRadius: 28, background: 'var(--s0)', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
-         <div style={{ width: 64, height: 64, borderRadius: 22, background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1.5px solid var(--bl)' }}>
+    <div className="rf" style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} onClick={() => setShowLogout(false)} />
+      <div className="card ru glass" style={{ position: 'relative', width: '100%', maxWidth: 380, padding: 32, textAlign: 'center', borderRadius: 28, border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
+         <div style={{ width: 64, height: 64, borderRadius: 22, background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '1px solid var(--bl)' }}>
             <Icon id="award" size={24} color="var(--ts)" />
          </div>
          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 10, letterSpacing: '-.03em' }}>Ready to exit?</h2>
@@ -155,7 +180,7 @@ const App = () => {
   );
 
   return (
-    <>
+    <ErrorBoundary>
       <Navbar page={page} go={go} user={user} onAuth={openAuth} onLogout={() => setShowLogout(true)} />
       {screens[page] || screens.landing}
       {showAuth && (
@@ -165,7 +190,7 @@ const App = () => {
         />
       )}
       {showLogout && <LogoutModal />}
-    </>
+    </ErrorBoundary>
   );
 };
 

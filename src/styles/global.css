@@ -52,7 +52,7 @@ html {
 body {
   font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   color: var(--tp);
-  background: var(--s0);
+  background: var(--s1);
   overflow-x: hidden;
   line-height: 1.5;
 }
@@ -97,13 +97,25 @@ body {
 .eyebrow       { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ts); }
 .eyebrow-light { color: rgba(255,255,255,.4); }
 
+/* ─── GLASSMORHISM ─── */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.glass-dark {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
 /* ─── NAVIGATION ─── */
 .nav-shell {
   position: fixed; top: 0; left: 0; right: 0; z-index: 500;
   height: 52px;
-  background: rgba(255,255,255,.82);
-  backdrop-filter: saturate(180%) blur(24px);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  background: rgba(255,255,255,.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: .5px solid var(--bl);
 }
 .nav-shell.dark-nav {
@@ -164,12 +176,13 @@ body {
   background: var(--s0);
   border: .5px solid var(--bl);
   border-radius: var(--r3);
-  transition: box-shadow .25s, border-color .25s, transform .25s;
+  transition: all .3s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 .card:hover { 
-  box-shadow: 0 20px 48px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.04); 
+  box-shadow: 0 24px 60px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.03); 
   border-color: var(--bm); 
-  transform: translateY(-4px) scale(1.005); 
+  transform: translateY(-4px) scale(1.002); 
 }
 
 .card-tint { background: var(--s1); border: .5px solid transparent; border-radius: var(--r3); transition: background .2s; }
@@ -361,6 +374,30 @@ body {
   /* ── Pricing ── */
   .pricing-head { padding: 56px 16px 32px !important; }
   .plan-grid    { gap: 12px !important; }
+/* ─── PAGE GUIDES (A4) ─── */
+.a4-preview {
+  background-image: linear-gradient(to bottom, #fff 841px, #f0f0f2 841px, #f0f0f2 842px, #fff 842px);
+  background-size: 100% 842px;
+  position: relative;
+}
+.a4-preview::after {
+  content: "Page Break / A4 Limit";
+  position: absolute;
+  top: 842px; left: 0; right: 0;
+  height: 20px;
+  background: var(--s1);
+  color: var(--ts);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.6;
+}
 
   /* ── Modals ── */
   .modal-card   { padding: 24px 18px !important; border-radius: 20px !important; min-width: 0 !important; }

@@ -13,7 +13,7 @@ import SalaryEstimator from '../components/SalaryEstimator';
 import { db, auth } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import Groq from 'groq-sdk';
+import { callGroq } from '../services/ai';
 
 const SIDE_NAV = [
   { id: 'overview',  l: 'Overview',         ic: 'grid' },
@@ -106,13 +106,8 @@ const Dashboard = ({ go, user, onAuth }) => {
     if (!user || loadingAI) return;
     setLoadingAI(true);
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
       const prompt = `Based on this resume text, suggest a very short, professional filename (3-4 words max). Output ONLY the filename, nothing else. Text: ${scan.text?.substring(0, 4000) || scan.name}`;
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.1-8b-instant'
-      });
+      const completion = await callGroq(prompt);
       const newName = completion.choices[0]?.message?.content?.replace(/["']/g, '').trim() || scan.name;
       await updateDoc(doc(db, 'users', user.uid, 'scans', scan.id), { name: newName });
       setSelectedScan({ ...scan, name: newName });
@@ -124,13 +119,8 @@ const Dashboard = ({ go, user, onAuth }) => {
     if (!user || loadingAI) return;
     setLoadingAI(true);
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
       const prompt = `You are a brutally honest, witty, and high-standard senior recruiter. Roast this resume text in 3 short, punchy, but actually helpful bullet points. Be funny but professional. Text: ${scan.text?.substring(0, 4000) || scan.name}`;
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.1-8b-instant'
-      });
+      const completion = await callGroq(prompt);
       setRoastContent(completion.choices[0]?.message?.content || "Your resume is so generic even I can't roast it.");
     } catch(e) { console.error(e); }
     setLoadingAI(false);
@@ -142,9 +132,9 @@ const Dashboard = ({ go, user, onAuth }) => {
     const rc = s.risk === 'High Risk' ? 'red' : s.risk === 'Medium Risk' ? 'amber' : 'green';
     
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedScan(null)} />
-        <div className="card ru" style={{ position: 'relative', width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', background: 'var(--s0)', padding: 32, borderRadius: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
+      <div className="rf" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }} onClick={() => setSelectedScan(null)} />
+        <div className="card ru glass" style={{ position: 'relative', width: '100%', maxWidth: 740, maxHeight: '90vh', overflowY: 'auto', padding: 36, borderRadius: 28, border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 32px 80px rgba(0,0,0,0.25)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
             <div>
               <p className="eyebrow" style={{ marginBottom: 8 }}>{new Date(s.date).toLocaleDateString()}</p>
@@ -228,7 +218,7 @@ const Dashboard = ({ go, user, onAuth }) => {
           </div>
 
           <div style={{ marginTop: 32, paddingTop: 20, borderTop: '.5px solid var(--bl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ fontSize: '.8rem', color: 'var(--ts)' }}>This will completely remove this scan permanently.</p>
+            <p style={{ fontSize: '.8rem', color: 'var(--ts)' }}>The original PDF is never stored on our servers for your privacy.</p>
             <Btn v="ghost" sz="sm" onClick={() => handleDeleteScan(s.id)} style={{ color: 'var(--red)' }}>
               {deleting ? 'Discarding...' : 'Discard Resume Version'}
             </Btn>
