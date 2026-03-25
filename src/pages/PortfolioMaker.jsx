@@ -57,10 +57,10 @@ const PortfolioMaker = ({ go, user, data }) => {
   }, [portfolioData.tagline]);
 
   useEffect(() => {
-    if (isLinked) {
+    if (isLinked && data) {
       setPortfolioData({
         name: data?.name || user?.name || '',
-        tagline: data?.title || 'Building the future of software',
+        tagline: data?.title || 'Software Engineer & Builder',
         summary: data?.summary || '',
         skills: data?.skills || '',
         experience: data?.experience || [],

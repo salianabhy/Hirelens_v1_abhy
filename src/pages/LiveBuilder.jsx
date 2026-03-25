@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { collection, addDoc, query, orderBy, getDocs } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 
-const LiveBuilder = ({ go, user }) => {
+const LiveBuilder = ({ go, user, onDataChange }) => {
   const [data, setData] = useState({
     name: 'Nishanth P',
     title: 'Senior Full Stack Engineer',
@@ -34,6 +34,11 @@ const LiveBuilder = ({ go, user }) => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showATS, setShowATS] = useState(false);
   const [jdBuffer, setJdBuffer] = useState('');
+
+  // Sync data up to App.jsx whenever it changes so Portfolio Maker stays in sync
+  useEffect(() => {
+    if (onDataChange) onDataChange(data);
+  }, [data]);
 
   const update = (key, val) => setData(prev => ({ ...prev, [key]: val }));
 
@@ -167,6 +172,21 @@ const LiveBuilder = ({ go, user }) => {
         });
       }
 
+      // Education
+      if (data.education && data.education.length > 0) {
+        sectionHeader("Education");
+        data.education.forEach(edu => {
+          checkPage(15);
+          doc.setFont("helvetica", "bold");
+          doc.text(edu.school || "", margin, y);
+          doc.setFont("helvetica", "normal");
+          doc.text(edu.year || "", pageWidth - margin, y, { align: 'right' });
+          y += 6;
+          doc.text(edu.degree || "", margin, y);
+          y += 10;
+        });
+      }
+
       doc.save(`${(data.name || "Resume").replace(/\s+/g, '_')}_Elite_Resume.pdf`);
     } catch (err) {
       console.error("PDF Export Error:", err);
@@ -273,6 +293,25 @@ const LiveBuilder = ({ go, user }) => {
              </div>
            )}
 
+           {activeLayer === 'education' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                 {data.education.map((edu, i) => (
+                   <div key={edu.id} className="rb-card" style={{ padding: 20 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                         <Badge type="dim">Education #{i+1}</Badge>
+                         <div onClick={() => removeItem('education', edu.id)} style={{ cursor: 'pointer', color: 'var(--red)' }}><Icon id="x" size={12} /></div>
+                      </div>
+                      <div className="rb-form-row">
+                        <input className="inp" placeholder="School/University" value={edu.school} onChange={e => updateItem('education', edu.id, 'school', e.target.value)} />
+                        <input className="inp" placeholder="Year" value={edu.year} onChange={e => updateItem('education', edu.id, 'year', e.target.value)} />
+                      </div>
+                      <input className="inp" placeholder="Degree" style={{ marginTop: 12 }} value={edu.degree} onChange={e => updateItem('education', edu.id, 'degree', e.target.value)} />
+                   </div>
+                 ))}
+                 <Btn v="ghost" sz="sm" pill onClick={() => addItem('education', { school: '', degree: '', year: '' })}>+ Add Education</Btn>
+              </div>
+           )}
+
            {activeLayer === 'review' && (
               <div className="rf" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                  <div className="card-tint" style={{ padding: 24, borderLeft: '4px solid var(--red)', background: 'rgba(255,59,48,.03)' }}>
@@ -343,9 +382,19 @@ const LiveBuilder = ({ go, user }) => {
               ))}
            </section>
 
-           <section>
+           <section style={{ marginBottom: 24 }}>
               <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 12 }}>SKILLS</h4>
               <p style={{ fontSize: '11px' }}>{data.skills}</p>
+           </section>
+
+           <section>
+              <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 12 }}>EDUCATION</h4>
+              {data.education.map(edu => (
+                <div key={edu.id} style={{ marginBottom: 10 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '11px' }}><span>{edu.school}</span><span>{edu.year}</span></div>
+                   <p style={{ fontSize: '11px', marginTop: 2 }}>{edu.degree}</p>
+                </div>
+              ))}
            </section>
         </div>
       </div>

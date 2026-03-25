@@ -12,11 +12,28 @@ import ResumeBuilder from './pages/ResumeBuilder';
 import LiveBuilder from './pages/LiveBuilder';
 import PortfolioMaker from './pages/PortfolioMaker';
 
+// Default structured resume data — used by Portfolio Maker as the live source of truth
+const DEFAULT_RESUME = {
+  name: '',
+  title: '',
+  email: '',
+  location: '',
+  linkedin: '',
+  github: '',
+  summary: '',
+  skills: '',
+  experience: [],
+  projects: [],
+  education: []
+};
+
 const App = () => {
-  const [page,     setPage]     = useState('landing');
-  const [user,     setUser]     = useState(null);
-  const [showAuth, setShowAuth] = useState(false);
-  const [results,  setResults]  = useState(null); // Dynamic scan results
+  const [page,        setPage]       = useState('landing');
+  const [user,        setUser]       = useState(null);
+  const [showAuth,    setShowAuth]   = useState(false);
+  const [results,     setResults]    = useState(null);
+  // Shared structured resume state — LiveBuilder writes, PortfolioMaker reads
+  const [resumeData,  setResumeData] = useState(DEFAULT_RESUME);
 
   const go = p => {
     setPage(p);
@@ -52,8 +69,8 @@ const App = () => {
     pricing:   <Pricing   go={go} onAuth={openAuth} />,
     dashboard: <Dashboard go={go} user={user} onAuth={openAuth} />,
     resumebuilder: <ResumeBuilder go={go} user={user} />,
-    livebuilder: <LiveBuilder go={go} user={user} />,
-    portfoliomaker: <PortfolioMaker go={go} user={user} data={results} />,
+    livebuilder: <LiveBuilder go={go} user={user} onDataChange={setResumeData} />,
+    portfoliomaker: <PortfolioMaker go={go} user={user} data={resumeData} />,
   };
 
   return (
