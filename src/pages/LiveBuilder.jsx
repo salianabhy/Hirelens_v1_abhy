@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Groq from 'groq-sdk';
 import Icon from '../components/Icon';
 import Btn from '../components/Btn';
 import Badge from '../components/Badge';
@@ -8,37 +9,115 @@ import { collection, addDoc, query, orderBy, getDocs } from 'firebase/firestore'
 import jsPDF from 'jspdf';
 
 const LiveBuilder = ({ go, user, onDataChange }) => {
-  const [data, setData] = useState({
-    name: 'Nishanth P',
-    title: 'Senior Full Stack Engineer',
-    email: 'nishanth@example.com',
-    location: 'Bangalore, India',
-    linkedin: 'linkedin.com/in/nishanth',
-    github: 'github.com/nishanth',
-    summary: 'High-impact engineer specialized in building scalable reactive systems and AI-driven platforms. Proven track record of reducing latency and optimizing cloud costs.',
-    skills: 'React | Node.js | Python | AWS | Docker | PostgreSQL',
-    experience: [
-      { id: 1, role: 'Senior Developer', company: 'Tech Corp', period: '2021 — Present', desc: 'Spearheaded the development of a real-time analytics engine, serving 50k+ daily active users and reducing data lag by 40%.' },
-      { id: 2, role: 'Full Stack Engineer', company: 'Startup Inc', period: '2019 — 2021', desc: 'Engineered a modular frontend architecture that improved page load speeds by 65%. Automated CI/CD pipelines using Jenkins.' }
-    ],
-    projects: [
-      { id: 1, title: 'AI Portfolio Builder', tech: 'React, Gemini, Firebase', desc: 'Developed an automated system to convert resumes into responsive portfolios in under 10 seconds.' }
-    ],
-    education: [
-      { id: 1, school: 'University of Technology', degree: 'B.Tech in Computer Science', year: '2019' }
-    ]
-  });
+  const [data, setData] = useState(null);
+  const [loadingExtract, setLoadingExtract] = useState(true);
 
   const [activeLayer, setActiveLayer] = useState('personal');
+  const [viewMode, setViewMode] = useState('editor'); // 'editor' or 'preview'
   const [template, setTemplate] = useState('classic');
   const [showTemplates, setShowTemplates] = useState(false);
   const [showATS, setShowATS] = useState(false);
   const [jdBuffer, setJdBuffer] = useState('');
+  const [loadingAI, setLoadingAI] = useState(false);
 
   // Sync data up to App.jsx whenever it changes so Portfolio Maker stays in sync
   useEffect(() => {
-    if (onDataChange) onDataChange(data);
+    if (data && onDataChange) onDataChange(data);
   }, [data]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchAndParse = async () => {
+      try {
+        const q = query(collection(db, 'users', user.uid, 'scans'), orderBy('date', 'desc'));
+        const snap = await getDocs(q);
+        const blankGen = { name: '', title: '', email: '', location: '', linkedin: '', github: '', summary: '', skills: '', experience: [], projects: [], education: [] };
+        
+        if (snap.empty) {
+          setData(blankGen);
+          setLoadingExtract(false);
+          return;
+        }
+        
+        const latest = snap.docs[0].data();
+        const rawText = latest.text;
+        
+        if (!rawText) {
+          setData(blankGen);
+          setLoadingExtract(false);
+          return;
+        }
+
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+        if (!apiKey) throw new Error("Missing API Key");
+        
+        const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+        
+        const prompt = `You are an expert ATS resume parser. I will provide raw text extracted from a PDF. Extract and format the user's details perfectly into the exact JSON structure below.
+        Rewrite all experience bullet points to be highly professional, ATS-friendly, and impact-driven using strong verbs. Limit descriptions to 1-2 concise sentences per entry.
+
+        JSON Schema:
+        {
+          "name": "Full Name",
+          "title": "Professional Title (e.g. Frontend Engineer)",
+          "email": "string",
+          "location": "City, Country",
+          "linkedin": "linkedin.com/in/...",
+          "github": "github.com/...",
+          "summary": "1-2 sentence professional summary...",
+          "skills": "Skill1 | Skill2 | Skill3 (joined by pipes)",
+          "experience": [
+            { "id": 1, "role": "string", "company": "string", "period": "Month Year - Month Year", "desc": "Action-oriented bullet points" }
+          ],
+          "projects": [
+            { "id": 1, "title": "string", "tech": "React, Node", "desc": "Project description" }
+          ],
+          "education": [
+            { "id": 1, "school": "string", "degree": "string", "year": "YYYY" }
+          ]
+        }
+        
+        Raw Resume Text:
+        """\n${rawText.substring(0, 4000)}\n"""
+        
+        Return ONLY valid JSON.`;
+
+        const completion = await groq.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+          model: "llama-3.1-8b-instant",
+          response_format: { type: "json_object" }
+        });
+
+        let parsed;
+        try {
+          let textContent = completion.choices[0]?.message?.content || "{}";
+          textContent = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
+          parsed = JSON.parse(textContent);
+        } catch(e) {
+          parsed = blankGen;
+        }
+        
+        setData({
+          name: parsed.name || '',
+          title: parsed.title || '',
+          email: parsed.email || '',
+          location: parsed.location || '',
+          linkedin: parsed.linkedin || '',
+          github: parsed.github || '',
+          summary: parsed.summary || '',
+          skills: parsed.skills || '',
+          experience: Array.isArray(parsed.experience) ? parsed.experience.map((e,i) => ({...e, id: e.id || i+1})) : [],
+          projects: Array.isArray(parsed.projects) ? parsed.projects.map((p,i) => ({...p, id: p.id || i+1})) : [],
+          education: Array.isArray(parsed.education) ? parsed.education.map((e,i) => ({...e, id: e.id || i+1})) : []
+        });
+      } catch (err) {
+        console.error("Extraction error:", err);
+        setData({ name: '', title: '', email: '', location: '', linkedin: '', github: '', summary: '', skills: '', experience: [], projects: [], education: [] });
+      }
+      setLoadingExtract(false);
+    };
+    fetchAndParse();
+  }, [user]);
 
   const update = (key, val) => setData(prev => ({ ...prev, [key]: val }));
 
@@ -66,34 +145,68 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
     update(listKey, newList);
   };
 
-  const improveBullet = (type, id, currentText) => {
-    const verbs = ['Spearheaded', 'Orchestrated', 'Optimized', 'Architected', 'Engineered', 'Pioneered'];
-    const metrics = ['40% reduction in latency', '15% increase in conversion', 'saving $20k/month', 'serving 50k+ users', 'achieving 99.9% uptime'];
-    const v = verbs[Math.floor(Math.random() * verbs.length)];
-    const m = metrics[Math.floor(Math.random() * metrics.length)];
-    const improved = `${v} the development of critical features, resulting in a ${m} through technical excellence.`;
-    
-    if (type === 'exp') {
-      update('experience', data.experience.map(e => e.id === id ? { ...e, desc: improved } : e));
-    } else if (type === 'proj') {
-      update('projects', data.projects.map(p => p.id === id ? { ...p, desc: improved } : p));
-    } else {
-      update('summary', improved);
+  const improveBullet = async (type, id, currentText) => {
+    if (!currentText.trim() || loadingAI) return;
+    setLoadingAI(true);
+    try {
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY");
+      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+      
+      const prompt = `Rewrite the following resume textual bullet point to make it highly professional, impact-driven, and ATS-friendly. Use strong action verbs and metrics if possible. Limit to one sentence.
+      Original Text: "${currentText}"`;
+
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "llama-3.1-8b-instant"
+      });
+
+      const improved = completion.choices[0]?.message?.content?.replace(/^"|"$|^\*|\*$/g, '').trim() || currentText;
+
+      if (type === 'exp') {
+        update('experience', data.experience.map(e => e.id === id ? { ...e, desc: improved } : e));
+      } else if (type === 'proj') {
+        update('projects', data.projects.map(p => p.id === id ? { ...p, desc: improved } : p));
+      } else {
+        update('summary', improved);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to Groq AI");
     }
+    setLoadingAI(false);
   };
 
-  const autoOptimize = () => {
-    if (!jdBuffer.trim()) return;
-    const skills = ['React', 'Node.js', 'Typescript', 'AWS', 'Docker', 'GraphQL', 'System Design'];
-    const matched = skills.filter(s => jdBuffer.toLowerCase().includes(s.toLowerCase()));
-    if (matched.length > 0) {
-       const current = data.skills.split('|').map(s => s.trim());
-       const missing = matched.filter(s => !current.includes(s));
-       if (missing.length > 0) {
-         update('skills', [...current, ...missing].join(' | '));
-       }
+  const autoOptimize = async () => {
+    if (!jdBuffer.trim() || loadingAI) return;
+    setLoadingAI(true);
+    try {
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY");
+      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+      
+      const prompt = `Extract top 6 critical technical hard skills from this Job Description. Return them strictly as a comma-separated list. Nothing else.
+      JD: "${jdBuffer}"`;
+
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "llama-3.1-8b-instant"
+      });
+
+      const extracted = completion.choices[0]?.message?.content?.split(',').map(s => s.trim()) || [];
+      if (extracted.length > 0) {
+         const current = data.skills.split('|').map(s => s.trim());
+         const missing = extracted.filter(s => !!s && !current.some(c => c.toLowerCase() === s.toLowerCase()));
+         if (missing.length > 0) {
+           update('skills', [...current, ...missing].join(' | '));
+         }
+      }
+      setJdBuffer('');
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to Groq AI");
     }
-    setJdBuffer('');
+    setLoadingAI(false);
   };
 
   const downloadPDF = () => {
@@ -110,26 +223,43 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       const sectionHeader = (txt) => {
         checkPage(15);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(13);
+        doc.setFontSize(11);
         doc.text(txt.toUpperCase(), margin, y);
         y += 2;
-        doc.setLineWidth(0.5);
+        doc.setLineWidth(0.4);
         doc.line(margin, y, pageWidth - margin, y);
-        y += 8;
+        y += 6;
       };
 
-      // Header
+      // Header Centered
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(28);
-      doc.text((data.name || "").toUpperCase(), margin, y);
-      y += 10;
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.text(data.title || "", margin, y);
-      y += 6;
+      doc.setFontSize(24);
+      doc.setTextColor(0, 0, 0);
+      const nameText = (data.name || "").toUpperCase();
+      doc.text(nameText, pageWidth / 2, y, { align: 'center' });
+      y += 8;
+      
       doc.setFontSize(10);
-      doc.text(`${data.location || ""} | ${data.email || ""} | ${data.linkedin || ""} | ${data.github || ""}`, margin, y);
-      y += 15;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(90, 90, 90);
+      const contactText = `${data.location || ""} | ${data.email || ""} | ${data.linkedin || ""}${data.github ? ` | ${data.github}` : ''}`;
+      doc.text(contactText, pageWidth / 2, y, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+      y += 14;
+
+      // Summary
+      if (data.summary) {
+        sectionHeader("Summary");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        const sLines = doc.splitTextToSize(data.summary, pageWidth - (margin * 2));
+        sLines.forEach(line => {
+          checkPage(6);
+          doc.text(line, margin, y);
+          y += 4.5;
+        });
+        y += 6;
+      }
 
       // Experience
       if (data.experience && data.experience.length > 0) {
@@ -137,20 +267,34 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
         data.experience.forEach(exp => {
           checkPage(20);
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(12);
-          doc.text(`${exp.company || ""} — ${exp.role || ""}`, margin, y);
-          doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
+          doc.text(`${exp.company || ""} — ${exp.role || ""}`, margin, y);
           doc.text(exp.period || "", pageWidth - margin, y, { align: 'right' });
-          y += 6;
-          const lines = doc.splitTextToSize(exp.desc || "", pageWidth - (margin * 2) - 8);
+          y += 5;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9.5);
+          const lines = doc.splitTextToSize(exp.desc || "", pageWidth - (margin * 2) - 4);
           lines.forEach(line => {
             checkPage(6);
-            doc.text("• " + line, margin + 2, y);
-            y += 5;
+            doc.text("• " + line, margin + 4, y);
+            y += 4.5;
           });
-          y += 6;
+          y += 4;
         });
+      }
+
+      // Skills
+      if (data.skills) {
+         sectionHeader("Skills");
+         doc.setFont("helvetica", "normal");
+         doc.setFontSize(9.5);
+         const skLines = doc.splitTextToSize(data.skills, pageWidth - (margin * 2));
+         skLines.forEach(line => {
+           checkPage(6);
+           doc.text(line, margin, y);
+           y += 4.5;
+         });
+         y += 6;
       }
 
       // Projects
@@ -159,16 +303,18 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
         data.projects.forEach(p => {
           checkPage(15);
           doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
           doc.text(`${p.title || ""} | ${p.tech || ""}`, margin, y);
-          y += 6;
+          y += 5;
           doc.setFont("helvetica", "normal");
-          const pLines = doc.splitTextToSize(p.desc || "", pageWidth - (margin * 2) - 8);
+          doc.setFontSize(9.5);
+          const pLines = doc.splitTextToSize(p.desc || "", pageWidth - (margin * 2) - 4);
           pLines.forEach(line => {
             checkPage(6);
-            doc.text("• " + line, margin + 2, y);
-            y += 5;
+            doc.text("• " + line, margin + 4, y);
+            y += 4.5;
           });
-          y += 6;
+          y += 4;
         });
       }
 
@@ -178,12 +324,14 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
         data.education.forEach(edu => {
           checkPage(15);
           doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
           doc.text(edu.school || "", margin, y);
-          doc.setFont("helvetica", "normal");
           doc.text(edu.year || "", pageWidth - margin, y, { align: 'right' });
-          y += 6;
+          y += 5;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9.5);
           doc.text(edu.degree || "", margin, y);
-          y += 10;
+          y += 8;
         });
       }
 
@@ -194,11 +342,70 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
     }
   };
 
+  if (loadingExtract || !data) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--s1)', alignItems: 'center', justifyContent: 'center', paddingTop: 52 }}>
+         <div className="spin" style={{ width: 40, height: 40, border: '3px solid var(--s2)', borderTopColor: 'var(--near-black)', borderRadius: '50%', marginBottom: 20 }} />
+         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-.03em', marginBottom: 6 }}>Booting Expert Builder</h2>
+         <p style={{ color: 'var(--ts)', fontSize: '.9rem' }}>Groq AI is restructuring your latest upload to perfect ATS standards...</p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--s1)', paddingTop: 52 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--s1)', paddingTop: 52 }}>
       
-      {/* 1. Left Editor Side */}
-      <div style={{ width: '42%', borderRight: '.5px solid var(--bl)', background: 'var(--s0)', overflowY: 'auto', padding: '32px 40px' }}>
+      {/* Mobile Tab Switcher */}
+      <div className="hide-desktop" style={{ 
+        display: 'flex', 
+        background: 'var(--s0)', 
+        borderBottom: '.5px solid var(--bl)', 
+        padding: '8px 16px',
+        gap: 12
+      }}>
+        <button 
+          onClick={() => setViewMode('editor')}
+          style={{ 
+            flex: 1, 
+            padding: '10px', 
+            borderRadius: 12, 
+            border: 'none',
+            background: viewMode === 'editor' ? 'var(--near-black)' : 'var(--s1)',
+            color: viewMode === 'editor' ? 'white' : 'var(--tp)',
+            fontSize: '.85rem',
+            fontWeight: 700,
+            transition: 'all .2s'
+          }}
+        >
+          Editor (Questionnaire)
+        </button>
+        <button 
+          onClick={() => setViewMode('preview')}
+          style={{ 
+            flex: 1, 
+            padding: '10px', 
+            borderRadius: 12, 
+            border: 'none',
+            background: viewMode === 'preview' ? 'var(--near-black)' : 'var(--s1)',
+            color: viewMode === 'preview' ? 'white' : 'var(--tp)',
+            fontSize: '.85rem',
+            fontWeight: 700,
+            transition: 'all .2s'
+          }}
+        >
+          View Resume
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* 1. Left Editor Side */}
+        <div className={viewMode === 'preview' ? 'hide-mobile' : ''} style={{ 
+          width: window.innerWidth > 860 ? '42%' : '100%', 
+          borderRight: '.5px solid var(--bl)', 
+          background: 'var(--s0)', 
+          overflowY: 'auto', 
+          padding: window.innerWidth > 860 ? '32px 40px' : '24px 20px' 
+        }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-.04em' }}>Elite Editor</h1>
            <Btn v="ghost" sz="sm" pill onClick={() => go('dashboard')}>Exit</Btn>
@@ -242,26 +449,52 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
 
            {activeLayer === 'experience' && (
              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <p style={{ fontSize: '.84rem', color: 'var(--ts)' }}>Use the ⚡ button on each entry to AI-rewrite for ATS impact.</p>
+                  <Btn v="ind" sz="xs" pill onClick={async () => {
+                    if (loadingAI || data.experience.length === 0) return;
+                    setLoadingAI(true);
+                    try {
+                      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+                      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
+                      const improved = await Promise.all(data.experience.map(async (exp) => {
+                        if (!exp.desc) return exp;
+                        const c = await groq.chat.completions.create({
+                          messages: [{ role: 'user', content: `Rewrite this resume bullet as a single impact-driven, ATS-optimized sentence using strong action verbs and metrics. Original: "${exp.desc}"` }],
+                          model: 'llama-3.1-8b-instant'
+                        });
+                        return { ...exp, desc: c.choices[0]?.message?.content?.replace(/^"|"$|^\*|\*$/g, '').trim() || exp.desc };
+                      }));
+                      update('experience', improved);
+                    } catch(e) { console.error(e); }
+                    setLoadingAI(false);
+                  }} disabled={loadingAI}>
+                    {loadingAI ? '...' : <><Icon id="zap" size={10} color="white" /> Optimize All</>}
+                  </Btn>
+                </div>
                 {data.experience.map((exp, i) => (
-                  <div key={exp.id} className="rb-card" style={{ padding: 20 }}>
+                  <div key={exp.id ?? i} className="rb-card" style={{ padding: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                        <Badge type="amber">Position #{i+1}</Badge>
                        <div onClick={() => removeItem('experience', exp.id)} style={{ cursor: 'pointer', color: 'var(--red)' }}><Icon id="x" size={12} /></div>
                     </div>
                     <div className="rb-form-row">
-                       <input className="inp" placeholder="Company" value={exp.company} onChange={e => updateItem('experience', exp.id, 'company', e.target.value)} />
-                       <input className="inp" placeholder="Period" value={exp.period} onChange={e => updateItem('experience', exp.id, 'period', e.target.value)} />
+                       <input className="inp" placeholder="Role / Title" value={exp.role || ''} onChange={e => updateItem('experience', exp.id, 'role', e.target.value)} />
+                       <input className="inp" placeholder="Company" value={exp.company || ''} onChange={e => updateItem('experience', exp.id, 'company', e.target.value)} />
+                    </div>
+                    <div className="rb-form-row" style={{ marginTop: 12 }}>
+                       <input className="inp" placeholder="Period (e.g. Jan 2022 – Present)" value={exp.period || ''} onChange={e => updateItem('experience', exp.id, 'period', e.target.value)} />
                     </div>
                     <div style={{ position: 'relative', marginTop: 12 }}>
-                       <textarea className="inp" placeholder="Impact..." style={{ height: 100, fontSize: '.84rem', lineHeight: 1.6, paddingRight: 40 }} value={exp.desc} onChange={e => updateItem('experience', exp.id, 'desc', e.target.value)} />
-                       <button onClick={() => improveBullet('exp', exp.id, exp.desc)} style={{ position: 'absolute', bottom: 10, right: 10, background: 'var(--ind)', border: 'none', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon id="zap" size={12} color="white" /></button>
+                       <textarea className="inp" placeholder="Impact-driven description..." style={{ height: 100, fontSize: '.84rem', lineHeight: 1.6, paddingRight: 40 }} value={exp.desc || ''} onChange={e => updateItem('experience', exp.id, 'desc', e.target.value)} />
+                       <button onClick={() => improveBullet('exp', exp.id, exp.desc || '')} style={{ position: 'absolute', bottom: 10, right: 10, background: loadingAI ? 'var(--s2)' : 'var(--ind)', border: 'none', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon id="zap" size={12} color="white" /></button>
                     </div>
-                    {!exp.desc.match(/\d+/) && exp.desc.length > 10 && (
-                      <div className="rf" style={{ fontSize: '.72rem', color: 'var(--amber)', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}><Icon id="star" size={10} /> Pro-tip: Adding a metric (e.g. 40%) will lift your Impact score.</div>
+                    {(exp.desc || '').length > 10 && !(exp.desc || '').match(/\d+/) && (
+                      <div className="rf" style={{ fontSize: '.72rem', color: 'var(--amber)', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}><Icon id="star" size={10} /> Pro-tip: Add a metric (e.g. 40%) to lift your ATS Impact score.</div>
                     )}
                   </div>
                 ))}
-                <Btn v="ghost" sz="sm" pill onClick={() => addItem('experience', { role: 'Engineer', company: '', period: '', desc: '' })}>+ Add Experience</Btn>
+                <Btn v="ghost" sz="sm" pill onClick={() => addItem('experience', { role: '', company: '', period: '', desc: '' })}>+ Add Experience</Btn>
              </div>
            )}
 
@@ -312,37 +545,60 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
               </div>
            )}
 
-           {activeLayer === 'review' && (
-              <div className="rf" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                 <div className="card-tint" style={{ padding: 24, borderLeft: '4px solid var(--red)', background: 'rgba(255,59,48,.03)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                       <h4 style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--red)', letterSpacing: '.05em' }}>Rejection Probability</h4>
-                       <Badge type="red">Predictive AI</Badge>
-                    </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-.05em', marginBottom: 8 }}>{data.experience[0].desc.length < 60 ? '88%' : '18%'}</div>
-                    <p style={{ fontSize: '.84rem', color: 'var(--ts)', lineHeight: 1.5 }}>{data.experience[0].desc.length < 60 ? "High Risk: Brief achievements detected. Add metrics to pass ATS filters." : "Low Risk: Excellent depth. Your profile is market-ready."}</p>
-                 </div>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <h4 className="eyebrow">Score Reasoning</h4>
-                    {[
-                      { l: 'ATS Formatting', s: 95, r: 'Standard structure detected.' },
-                      { l: 'Impact Language', s: 45, r: 'Passive verbs found. Need numbers.' },
-                      { l: 'Keyword Sync', s: 72, r: 'Missing some cloud-native keywords.' }
-                    ].map(res => (
-                      <div key={res.l} className="card" style={{ padding: 16 }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ fontWeight: 800, fontSize: '.85rem' }}>{res.l}</span><span style={{ fontWeight: 800 }}>{res.s}%</span></div>
-                         <p style={{ fontSize: '.78rem', color: 'var(--ts)' }}>{res.r}</p>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-           )}
+           {activeLayer === 'review' && (() => {
+             const exps = data.experience || [];
+             const totalDesc = exps.map(e => e.desc || '').join(' ');
+             const hasMetrics = /\d+/.test(totalDesc);
+             const hasActionVerbs = /\b(spearheaded|engineered|architected|optimized|orchestrated|launched|led|built|designed|delivered|reduced|increased|improved|drove|managed|developed|automated|scaled|created|deployed)\b/i.test(totalDesc);
+             const hasSummary = (data.summary || '').length > 40;
+             const hasSkills = (data.skills || '').split('|').filter(s => s.trim()).length >= 4;
+             const atsScore = Math.min(100, 60 + (hasMetrics ? 12 : 0) + (hasActionVerbs ? 10 : 0) + (hasSummary ? 10 : 0) + (hasSkills ? 8 : 0));
+             const impactScore = Math.min(100, 30 + (hasMetrics ? 40 : 0) + (hasActionVerbs ? 20 : 0) + (exps.length > 1 ? 10 : 0));
+             const keywordScore = hasSkills ? Math.min(95, 60 + data.skills.split('|').filter(s => s.trim()).length * 5) : 40;
+             const rejectionPct = Math.max(5, 100 - Math.round((atsScore + impactScore + keywordScore) / 3));
+             return (
+               <div className="rf" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <div className="card-tint" style={{ padding: 24, borderLeft: `4px solid ${rejectionPct > 50 ? 'var(--red)' : rejectionPct > 25 ? 'var(--amber)' : 'var(--green)'}`, background: rejectionPct > 50 ? 'rgba(255,59,48,.04)' : 'rgba(52,199,89,.04)' }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <h4 style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', color: rejectionPct > 50 ? 'var(--red)' : rejectionPct > 25 ? 'var(--amber)' : 'var(--green)', letterSpacing: '.05em' }}>Rejection Probability</h4>
+                        <Badge type={rejectionPct > 50 ? 'red' : rejectionPct > 25 ? 'amber' : 'green'}>Live AI Score</Badge>
+                     </div>
+                     <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-.05em', marginBottom: 8, color: rejectionPct > 50 ? 'var(--red)' : rejectionPct > 25 ? 'var(--amber)' : 'var(--green)' }}>{rejectionPct}%</div>
+                     <p style={{ fontSize: '.84rem', color: 'var(--ts)', lineHeight: 1.5 }}>
+                       {rejectionPct > 50 ? 'High Risk: Add metrics, action verbs, and a stronger summary to pass ATS filters.' : rejectionPct > 25 ? 'Moderate Risk: Use the ⚡ buttons to further strengthen your bullets.' : 'Low Risk: Excellent depth. Your profile is ATS market-ready!'}
+                     </p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                     <h4 className="eyebrow">Live Score Reasoning</h4>
+                     {[
+                       { l: 'ATS Formatting', s: atsScore, r: atsScore > 80 ? 'Standard structure detected — good.' : 'Improve summary and add more structured content.' },
+                       { l: 'Impact Language', s: impactScore, r: impactScore > 70 ? 'Strong action verbs and metrics detected.' : 'Use ⚡ to rewrite bullets with metrics and power verbs.' },
+                       { l: 'Keyword Density', s: keywordScore, r: keywordScore > 70 ? 'Sufficient skills detected.' : 'Add more technical keywords to the Skills section.' }
+                     ].map(res => (
+                       <div key={res.l} className="card" style={{ padding: 16 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ fontWeight: 800, fontSize: '.85rem' }}>{res.l}</span><span style={{ fontWeight: 800, color: res.s > 70 ? 'var(--green)' : res.s > 50 ? 'var(--amber)' : 'var(--red)' }}>{res.s}%</span></div>
+                          <div style={{ height: 4, background: 'var(--s2)', borderRadius: 4, marginTop: 6, marginBottom: 8 }}><div style={{ height: '100%', width: `${res.s}%`, borderRadius: 4, background: res.s > 70 ? 'var(--green)' : res.s > 50 ? 'var(--amber)' : 'var(--red)', transition: 'width .6s ease' }} /></div>
+                          <p style={{ fontSize: '.78rem', color: 'var(--ts)' }}>{res.r}</p>
+                       </div>
+                     ))}
+                  </div>
+               </div>
+             );
+           })()}
         </div>
       </div>
-
-      {/* 2. Right Preview Side — The 1% Standard */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', overflowY: 'auto', background: '#f8f9fa' }}>
-        <div style={{ marginBottom: 24, display: 'flex', gap: 12 }}>
+ 
+       {/* 2. Right Preview Side — The 1% Standard */}
+       <div className={viewMode === 'editor' ? 'hide-mobile' : ''} style={{ 
+         flex: 1, 
+         display: 'flex', 
+         flexDirection: 'column', 
+         alignItems: 'center', 
+         padding: '40px 20px', 
+         overflowY: 'auto', 
+         background: '#f8f9fa' 
+       }}>
+         <div style={{ marginBottom: 24, display: 'flex', gap: 12 }}>
            <Btn v="dark" sz="sm" pill onClick={downloadPDF}><Icon id="download" size={14} color="white" /> Export PDF</Btn>
            <Btn v={showATS ? 'ind' : 'light'} sz="sm" pill onClick={() => setShowATS(!showATS)}><Icon id="target" size={14} color={showATS ? 'white' : 'var(--tp)'} /> {showATS ? 'ATS Active' : 'Recruiter Mode'}</Btn>
         </div>
@@ -397,6 +653,7 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
               ))}
            </section>
         </div>
+      </div>
       </div>
     </div>
   );

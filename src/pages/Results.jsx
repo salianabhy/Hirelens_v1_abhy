@@ -35,7 +35,7 @@ const Results = ({ go, user, onAuth, data }) => {
     { label: 'Structure Issues', sev: 'High', desc: 'Some sections like Skills or Projects might be missing or poorly labeled.' }
   ];
 
-  const improvements = [
+  const improvements = data?.improvements || [
     "Add more specific action verbs like 'Architected' or 'Optimized'",
     "Quantify your achievements with percentages (e.g. 'Increased efficiency by 20%')",
     "Tailor your skill section to match the tech stack mentioned in the target role",
@@ -112,16 +112,14 @@ const Results = ({ go, user, onAuth, data }) => {
           <div className="ru d2-5 card" style={{ padding: 26, marginBottom: 13, background: 'linear-gradient(135deg, var(--s0) 0%, #FAFAFA 100%)' }}>
             <p className="eyebrow" style={{ marginBottom: 15 }}>Signals Detected</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {['managed', 'developed', 'lead', 'spearheaded', 'optimized', 'scaled', 'delivered', 'architected', 'engineered', 'automated']
-                .filter(k => data.text?.toLowerCase().includes(k))
-                .map(k => <Badge key={k} type="dim" style={{ textTransform: 'capitalize' }}>{k}</Badge>)
-              }
-              {['react', 'node', 'python', 'javascript', 'aws', 'docker', 'sql', 'git', 'java', 'c++', 'mongodb', 'firebase', 'cloud']
-                .filter(k => data.text?.toLowerCase().includes(k))
-                .map(k => <Badge key={k} type="ind" style={{ textTransform: 'capitalize' }}>{k}</Badge>)
-              }
-              {data.text?.match(/\d+%/g)?.slice(0, 3).map((m, i) => (
-                <Badge key={i} type="green">{m}</Badge>
+              {data?.signals?.action_verbs?.map((k, i) => (
+                <Badge key={`v-${i}`} type="dim" style={{ textTransform: 'capitalize' }}>{k}</Badge>
+              ))}
+              {data?.signals?.tech_keywords?.map((k, i) => (
+                <Badge key={`t-${i}`} type="ind" style={{ textTransform: 'capitalize' }}>{k}</Badge>
+              ))}
+              {data?.signals?.metrics?.map((m, i) => (
+                <Badge key={`m-${i}`} type="green">{m}</Badge>
               ))}
             </div>
             <p style={{ fontSize: '.72rem', color: 'var(--tt)', marginTop: 12 }}>
@@ -172,7 +170,7 @@ const Results = ({ go, user, onAuth, data }) => {
               <div>
                 <p className="eyebrow" style={{ marginBottom: 7 }}>Improvements</p>
                 <h3 style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-.04em' }}>
-                  Could raise your score to <span style={{ color: 'var(--green)' }}>72%</span>
+                  Could raise your score to <span style={{ color: 'var(--green)' }}>{Math.min(99, score + 18)}%</span>
                 </h3>
               </div>
               {!user && <Badge type="ind">Pro</Badge>}
@@ -204,11 +202,10 @@ const Results = ({ go, user, onAuth, data }) => {
           <div style={{ position: 'relative', minWidth: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--td)', marginBottom: 9 }}>Action Required</p>
             <h3 style={{ color: 'var(--tw)', fontSize: 'clamp(1rem,2vw,1.35rem)', fontWeight: 700, letterSpacing: '-.04em', marginBottom: 7 }}>
-              You're below the top 20% of candidates.
+              {score >= 80 ? "You're in the top tier of candidates!" : "You're below the top 20% of candidates."}
             </h3>
             <p style={{ color: 'var(--td)', fontSize: '.84rem', lineHeight: 1.6 }}>
-              Average users go from{' '}
-              <span style={{ color: 'var(--tw)', fontWeight: 600 }}>46% → 72%</span> in one session.
+              {score >= 80 ? `Average users elevate their resume from ${score}% → 95% in one session.` : `Average users go from ${score}% → 72% in one session.`}
             </p>
           </div>
           <div className="cta-btns" style={{ display: 'flex', flexDirection: 'column', gap: 9, alignItems: 'flex-end', flexShrink: 0, position: 'relative' }}>
@@ -220,6 +217,17 @@ const Results = ({ go, user, onAuth, data }) => {
             </Btn>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,.24)', fontWeight: 500 }}>₹149 / month · cancel anytime</span>
           </div>
+        </div>
+
+        {/* New Dashboard CTA */}
+        <div className="ru d10" style={{ marginTop: 24, padding: '32px', background: 'var(--near-black)', borderRadius: 24, textAlign: 'center', color: 'white', position: 'relative' }}>
+          <h3 style={{ fontSize: '1.45rem', fontWeight: 800, marginBottom: 8, letterSpacing: '-.03em' }}>Ready for the Next Level?</h3>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '.9rem', marginBottom: 24, maxWidth: 440, margin: '0 auto 24px' }}>
+            We've saved your analysis! Visit your dashboard to access the AI Career Coach, Cover Letter Generator, and real-time Salary Benchmarks.
+          </p>
+          <Btn v="white" sz="lg" pill onClick={() => go('dashboard')}>
+            View Full Dashboard <Icon id="arrow" size={14} color="var(--near-black)" />
+          </Btn>
         </div>
 
       </div>

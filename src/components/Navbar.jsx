@@ -3,7 +3,7 @@ import Icon from './Icon';
 import Btn from './Btn';
 import useMedia from '../hooks/useMedia';
 
-const Navbar = ({ page, go, user, onAuth }) => {
+const Navbar = ({ page, go, user, onAuth, onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isMobile } = useMedia();
   const dark = page === 'landing';
@@ -52,13 +52,23 @@ const Navbar = ({ page, go, user, onAuth }) => {
           {/* Right — Auth / User + Hamburger */}
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             {user ? (
-              <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                <div style={{ width:28, height:28, borderRadius:'50%', background: dark ? 'rgba(255,255,255,.15)' : 'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:700, fontSize:11 }}>
-                  {user.name[0]}
+              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+                  <div style={{ width:28, height:28, borderRadius:'50%', background: dark ? 'rgba(255,255,255,.15)' : 'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:700, fontSize:11 }}>
+                    {user.name[0]}
+                  </div>
+                  <span className="hide-mobile" style={{ fontSize:'.84rem', fontWeight:600, color: dark ? 'var(--tw)' : 'var(--tp)' }}>
+                    {user.name}
+                  </span>
                 </div>
-                <span className="hide-mobile" style={{ fontSize:'.84rem', fontWeight:600, color: dark ? 'var(--td)' : 'var(--tp)' }}>
-                  {user.name}
-                </span>
+                <Btn 
+                  v={dark ? 'ghost-dark' : 'ghost'} 
+                  sz="xs" pill 
+                  onClick={onLogout}
+                  style={{ fontSize: '.75rem', padding: '6px 12px' }}
+                >
+                  Sign out
+                </Btn>
               </div>
             ) : (
               <>
@@ -106,7 +116,14 @@ const Navbar = ({ page, go, user, onAuth }) => {
                 {l}
               </button>
             ))}
-            {!user && (
+            {user ? (
+              <button
+                onClick={() => { onLogout(); setMenuOpen(false); }}
+                style={{ display:'block', width:'100%', textAlign:'left', padding:'12px 14px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, fontSize:'.95rem', color: 'var(--red)', borderRadius:11, transition:'background .15s' }}
+              >
+                Sign out
+              </button>
+            ) : (
               <button
                 onClick={() => { onAuth(); setMenuOpen(false); }}
                 style={{ display:'block', width:'100%', textAlign:'left', padding:'12px 14px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, fontSize:'.95rem', color: dark ? 'rgba(255,255,255,.55)' : 'var(--ts)', borderRadius:11, transition:'background .15s' }}

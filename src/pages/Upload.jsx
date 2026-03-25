@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import * as pdfjs from 'pdfjs-dist';
 import Icon from '../components/Icon';
 
 pdfjs.GlobalWorkerOptions.workerSrc = ''; // Handled dynamically in extractText
 import Btn from '../components/Btn';
+import Groq from 'groq-sdk';
 
 const STEPS = [
   'Parsing document structure…',
@@ -19,9 +20,11 @@ const Upload = ({ go, user, onAuth, setResults }) => {
   const [dragging, setDragging] = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [step,     setStep]     = useState(0);
+  const [apiError, setApiError] = useState(null);
   const inputRef = useRef(null);
+  const roleRef  = useRef(null);
 
-  const pick = f => { if (f) setFile(f); };
+  const pick = f => { if (f) { setFile(f); setApiError(null); } };
 
   const onDrop = useCallback(e => {
     e.preventDefault();
@@ -74,60 +77,94 @@ const Upload = ({ go, user, onAuth, setResults }) => {
     }
   };
 
-  const scoreAnalysis = (text, fileName) => {
-    const t = text.toLowerCase();
-    
-    // 1. ATS Keywords (Action Verbs)
-    const atsKeys = ['managed', 'developed', 'lead', 'spearheaded', 'optimized', 'scaled', 'delivered', 'architected', 'engineered', 'automated'];
-    const atsMatch = atsKeys.filter(k => t.includes(k)).length;
-    const atsScore = Math.min(100, (atsMatch / atsKeys.length) * 120);
+  const generateAIAssessment = async (text, fileName, targetRole) => {
+    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error("Missing VITE_GROQ_API_KEY in .env.local file. Please add your Groq API key.");
+    }
+    const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
 
-    // 2. Tech Keywords
-    const techKeys = ['react', 'node', 'python', 'javascript', 'aws', 'docker', 'sql', 'git', 'java', 'c++', 'mongodb', 'firebase', 'cloud'];
-    const techMatch = techKeys.filter(k => t.includes(k)).length;
-    const techScore = Math.min(100, (techMatch / 6) * 100);
+    const prompt = `
+      You are an expert ATS (Applicant Tracking System) and senior technical recruiter.
+      Extract and evaluate the following resume against the target role (if provided).
+      Target Role: ${targetRole || 'General/Unspecified'}
+      Resume Text:
+      ${text}
 
-    // 3. Impact (Numbers/Quantifiable)
-    const hasNumbers = (t.match(/\d+%/g) || t.match(/\₹\d+/g) || t.match(/\$\d+/g) || t.match(/\d+\+/g)).length || 0;
-    const impactScore = Math.min(100, (hasNumbers / 4) * 100);
+      Evaluate the resume strictly and provide a JSON response with exactly this structure:
+      {
+        "score": number (0-100 overall score),
+        "ats": number (0-100 ATS compatibility),
+        "keyword": number (0-100 keyword match),
+        "formatting": number (0-100 structure/formatting),
+        "impact": number (0-100 impact metrics),
+        "signals": {
+          "action_verbs": ["spearheaded", "architected"],
+          "tech_keywords": ["react", "node", "aws"],
+          "metrics": ["20% increase", "10k+ users"]
+        },
+        "issues": [
+          { "label": "Short title", "sev": "Critical" | "High" | "Medium", "desc": "Detailed desc" }
+        ],
+        "improvements": ["Actionable advice 1", "Advice 2"]
+      }
+      Return ONLY valid JSON. Do not include markdown formatting or backticks around the json block.
+    `;
 
-    // 4. Structure
-    const sections = ['experience', 'education', 'skills', 'projects', 'contact', 'summary'];
-    const structureMatch = sections.filter(k => t.includes(k)).length;
-    const structureScore = (structureMatch / sections.length) * 100;
-
-    const finalScore = Math.round((atsScore * 0.3) + (techScore * 0.3) + (impactScore * 0.2) + (structureScore * 0.2));
-
-    const issues = [];
-    if (atsMatch < 3) issues.push({ label: 'Weak action verbs', sev: 'Critical', desc: 'Use strong verbs like "Architected" or "Spearheaded" instead of "worked on".' });
-    if (impactScore < 50) issues.push({ label: 'Lack of metrics', sev: 'Critical', desc: 'Add quantifiable results (e.g. "Increased sales by 40%") to show your impact.' });
-    if (techMatch < 4) issues.push({ label: 'Low tech density', sev: 'High', desc: 'Ensure all relevant technologies for the role are mentioned prominently.' });
-    if (structureMatch < 5) issues.push({ label: 'Missing key sections', sev: 'High', desc: 'Ensure Experience, Education, and Skills sections are clearly defined.' });
-
-    return {
-      name: fileName,
-      score: finalScore || 45,
-      ats: Math.round(atsScore),
-      keyword: Math.round(techScore),
-      formatting: Math.round(structureScore),
-      issues: issues.length > 0 ? issues : [{ label: 'Generic Summary', sev: 'Medium', desc: 'Your summary could be more tailored to the target role.' }],
-      date: new Date().toISOString(),
-      risk: finalScore < 60 ? 'High Risk' : finalScore < 80 ? 'Medium Risk' : 'Low Risk',
-      text: text // Include full text for transparency on results page
-    };
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "llama-3.1-8b-instant",
+        response_format: { type: "json_object" }
+      });
+      
+      let textContent = completion.choices[0]?.message?.content || "{}";
+      
+      // Make parsing more robust
+      textContent = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
+      
+      let parsed;
+      try {
+        parsed = JSON.parse(textContent);
+      } catch (parseErr) {
+        console.error("Failed to parse Groq JSON:", textContent);
+        throw new Error("AI returned an invalid format. Please try again.");
+      }
+      
+      const finalScore = parsed.score || 45;
+      return {
+        name: fileName,
+        score: finalScore,
+        ats: parsed.ats || 45,
+        keyword: parsed.keyword || 45,
+        formatting: parsed.formatting || 45,
+        impact: parsed.impact || 45,
+        signals: parsed.signals || { action_verbs: [], tech_keywords: [], metrics: [] },
+        issues: parsed.issues || [],
+        improvements: parsed.improvements || [],
+        date: new Date().toISOString(),
+        risk: finalScore < 60 ? 'High Risk' : finalScore < 80 ? 'Medium Risk' : 'Low Risk',
+        text: text
+      };
+    } catch (err) {
+      console.error("Groq API Error:", err);
+      throw new Error(`API Error: ${err.message || "Failed to connect to AI"}`);
+    }
   };
 
   const analyze = async () => {
     if (!file) return;
     setLoading(true);
     setStep(0);
+    setApiError(null);
+
+    const role = roleRef.current?.value || '';
 
     // ── Pre-fetch / Background Work ──
-    // Start extraction and upload immediately to save time
     const processPromise = (async () => {
       try {
         const text = await extractText(file);
-        const analysis = scoreAnalysis(text, file.name || 'Resume');
+        const analysis = await generateAIAssessment(text, file.name || 'Resume', role);
         setResults(analysis);
 
         let fileUrl = null;
@@ -138,7 +175,8 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         }
 
         if (user?.uid) {
-          await addDoc(collection(db, 'users', user.uid, 'scans'), {
+          const safeName = (file.name || 'document').replace(/[^a-zA-Z0-9]/g, '_');
+          await setDoc(doc(db, 'users', user.uid, 'scans', safeName), {
             ...analysis,
             fileUrl,
           });
@@ -146,8 +184,8 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         return true;
       } catch (err) {
         console.error("Analysis background process failed:", err);
-        // We still return true so the UI can proceed to results with defaults
-        return true;
+        setApiError(err.message);
+        return false;
       }
     })();
 
@@ -159,14 +197,15 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         setStep(i);
       } else {
         clearInterval(iv);
-        // Wait for real work to resolve before navigating
         processPromise.then((success) => {
           if (success) {
             setTimeout(() => go('results'), 500);
+          } else {
+            setLoading(false);
           }
         });
       }
-    }, 550); // Faster steps (33% faster than before)
+    }, 550);
   };
 
   if (!user) return (
@@ -242,6 +281,7 @@ const Upload = ({ go, user, onAuth, setResults }) => {
             <span style={{ color: 'var(--tt)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
           </label>
           <input
+            ref={roleRef}
             className="inp"
             placeholder="e.g. Senior Software Engineer at Stripe"
             style={{ padding: '12px 15px' }}
@@ -249,6 +289,11 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         </div>
 
         {/* Loader or CTA */}
+        {apiError && (
+          <div style={{ padding: '12px 16px', background: 'rgba(255,59,48,.1)', color: 'var(--red)', borderRadius: 12, marginBottom: 16, fontSize: '.9rem', fontWeight: 500, textAlign: 'center' }}>
+            {apiError}
+          </div>
+        )}
         {loading ? (
           <div className="card" style={{ padding: 26, textAlign: 'center' }}>
             <div

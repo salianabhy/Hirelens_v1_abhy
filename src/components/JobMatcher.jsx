@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Groq from 'groq-sdk';
 import Icon from './Icon';
 import Btn from './Btn';
 import Badge from './Badge';
@@ -8,47 +9,52 @@ const JobMatcher = ({ resumeText = "" }) => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const performMatch = () => {
+  const performMatch = async () => {
     if (!jd.trim()) return;
     setLoading(true);
     
-    // Advanced NLP-Simulation for categorical gap analysis
-    setTimeout(() => {
-      const jdWords = jd.toLowerCase().match(/\b(\w+)\b/g) || [];
-      const resWords = resumeText.toLowerCase().match(/\b(\w+)\b/g) || [];
+    try {
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY in .env.local");
+      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
       
-      const skills = ['react', 'node.js', 'python', 'java', 'sql', 'aws', 'docker', 'typescript', 'figma', 'tailwind', 'graphql', 'kubernetes'];
-      const tools = ['git', 'jira', 'postman', 'vscode', 'firebase', 'mongodb', 'jenkins', 'ci/cd'];
-      const soft = ['leadership', 'communication', 'problem-solving', 'agile', 'scrum', 'collaboration'];
+      const prompt = `
+        You are an expert technical recruiter matching a resume to a job description.
+        Job Description:
+        ${jd}
 
-      const match = (list) => list.filter(word => jdWords.includes(word));
-      const matchedSkills = match(skills);
-      const matchedTools = match(tools);
-      
-      const findMissing = (list) => list.filter(word => jdWords.includes(word) && !resWords.includes(word));
-      
-      const missingCritical = findMissing(skills).slice(0, 3);
-      const missingSecondary = findMissing(tools).slice(0, 2);
-      const missingSoft = soft.filter(s => jdWords.includes(s) && !resWords.includes(s));
+        Resume:
+        ${resumeText}
 
-      const score = Math.min(100, Math.round((matchedSkills.length * 10) + (matchedTools.length * 5) + 15));
+        Evaluate the resume strictly against the JD. Respond ONLY with a JSON object in this exact format:
+        {
+          "score": number (0-100 match percentage),
+          "match_analysis": "Detailed string explaining exactly why the resume matches or falls short, and overall strategic thoughts",
+          "matched_skills": ["List of core skills found in both"],
+          "missing_skills": ["List of critical skills missing from resume"],
+          "action_plan": [
+            { "step": "Short action title", "reason": "Detailed explanation of what to do" }
+          ],
+          "what_to_learn": ["Specific tech 1", "Specific tech 2"],
+          "roadmap_slug": "A valid slug from roadmap.sh (e.g. frontend, backend, devops, python, react, full-stack, computer-science) that best fits the missing skills"
+        }
+        Return ONLY valid JSON.
+      `;
 
-      setResult({
-        score,
-        matched: { skills: matchedSkills, tools: matchedTools },
-        gaps: { 
-          critical: missingCritical.length > 0 ? missingCritical : ['System Design', 'Cloud Architecture'],
-          secondary: missingSecondary.length > 0 ? missingSecondary : ['Docker', 'Kubernetes'],
-          soft: missingSoft.length > 0 ? missingSoft : ['Cross-functional Collaboration']
-        },
-        actions: [
-          { title: "Bridge the Tech Gap", desc: `Incorporate '${missingCritical[0] || 'System Design'}' into your experience to lift your match score.`, impact: "+15%" },
-          { title: "Tooling Alignment", desc: `Mention your experience with '${missingSecondary[0] || 'CI/CD'}' to align with the infrastructure requirements.`, impact: "+8%" },
-          { title: "Impact Quantification", desc: "Your experience bullets lack metrics. Adding numbers (%, $) will improve your parsing score.", impact: "+12%" }
-        ]
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "llama-3.1-8b-instant",
+        response_format: { type: "json_object" }
       });
-      setLoading(false);
-    }, 1500);
+
+      const textContent = completion.choices[0]?.message?.content || "{}";
+      const cleanJson = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
+      setResult(JSON.parse(cleanJson));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to AI match engine: " + err.message);
+    }
+    setLoading(false);
   };
 
   return (
@@ -97,39 +103,58 @@ const JobMatcher = ({ resumeText = "" }) => {
              </div>
           </div>
 
-          {/* Skill Gaps Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {[
-              { label: 'Critical Gaps', list: result.gaps.critical, c: 'red' },
-              { label: 'Secondary Gaps', list: result.gaps.secondary, c: 'amber' },
-              { label: 'Soft Skills', list: result.gaps.soft, c: 'ind' }
-            ].map(sec => (
-              <div key={sec.label} className="card-tint" style={{ padding: 16 }}>
-                <h4 style={{ fontSize: '.7rem', fontWeight: 800, textTransform: 'uppercase', color: `var(--${sec.c})`, marginBottom: 12 }}>{sec.label}</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {sec.list.map(s => (
-                    <div key={s} style={{ fontSize: '.8rem', fontWeight: 600, color: 'var(--near-black)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                       <div style={{ width: 4, height: 4, borderRadius: '50%', background: `var(--${sec.c})` }} /> {s}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+          {/* Detailed Match Analysis */}
+          <div className="card-tint" style={{ padding: 24 }}>
+             <h4 style={{ fontSize: '.9rem', fontWeight: 800, marginBottom: 12 }}>Match Analysis</h4>
+             <p style={{ fontSize: '.85rem', color: 'var(--ts)', lineHeight: 1.6 }}>{result.match_analysis}</p>
           </div>
 
-          {/* Actionable Recommendations */}
-          <div>
-             <h4 className="eyebrow" style={{ marginBottom: 16 }}>Actionable Recommendations</h4>
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                {result.actions.map((act, i) => (
-                  <div key={i} className="card dash-card-hover" style={{ padding: 16, borderLeft: '4px solid var(--ind)' }}>
-                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <h5 style={{ fontSize: '.85rem', fontWeight: 800 }}>{act.title}</h5>
-                        <Badge type="ind">{act.impact}</Badge>
-                     </div>
-                     <p style={{ fontSize: '.78rem', color: 'var(--ts)', lineHeight: 1.5 }}>{act.desc}</p>
-                  </div>
-                ))}
+          {/* Skills Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+             <div className="card" style={{ padding: 16, borderTop: '4px solid var(--green)' }}>
+                <h4 style={{ fontSize: '.8rem', fontWeight: 800, marginBottom: 12, color: 'var(--green)' }}>Matched Skills</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {result.matched_skills?.map(s => <Badge key={s} type="green">{s}</Badge>)}
+                </div>
+             </div>
+             <div className="card" style={{ padding: 16, borderTop: '4px solid var(--red)' }}>
+                <h4 style={{ fontSize: '.8rem', fontWeight: 800, marginBottom: 12, color: 'var(--red)' }}>Missing Skills</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {result.missing_skills?.map(s => <Badge key={s} type="dim">{s}</Badge>)}
+                </div>
+             </div>
+          </div>
+
+          {/* Actionable Recommendations & Learning Path */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+             <div className="card" style={{ padding: 24, gridColumn: 'span 2' }}>
+                <h4 className="eyebrow" style={{ marginBottom: 16 }}>What to Do First</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                   {result.action_plan?.map((act, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 12 }}>
+                         <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--s1)', color: 'var(--ts)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{i+1}</div>
+                         <div>
+                            <h5 style={{ fontSize: '.85rem', fontWeight: 700 }}>{act.step}</h5>
+                            <p style={{ fontSize: '.75rem', color: 'var(--ts)', marginTop: 4, lineHeight: 1.5 }}>{act.reason}</p>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             </div>
+
+             <div className="card" style={{ padding: 24, background: 'var(--ind)', color: 'white', gridColumn: '1 / -1' }}>
+                <h4 className="eyebrow" style={{ marginBottom: 16, color: 'rgba(255,255,255,.7)' }}>What to Learn</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                  {result.what_to_learn?.map(l => (
+                     <span key={l} style={{ background: 'rgba(0,0,0,.2)', padding: '6px 12px', borderRadius: 8, fontSize: '.75rem', fontWeight: 600 }}>{l}</span>
+                  ))}
+                </div>
+                
+                {result.roadmap_slug && (
+                  <Btn v="white" sz="lg" full onClick={() => window.open(`https://roadmap.sh/${result.roadmap_slug?.toLowerCase()}`, '_blank')}>
+                    View {result.roadmap_slug} Roadmap <Icon id="arrow" size={14} color="var(--ind)" />
+                  </Btn>
+                )}
              </div>
           </div>
         </div>

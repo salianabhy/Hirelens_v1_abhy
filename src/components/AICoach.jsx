@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Groq from 'groq-sdk';
 import Icon from './Icon';
 import Btn from './Btn';
 
@@ -26,32 +27,44 @@ const AICoach = ({ scans = [] }) => {
   const ask = async (text) => {
     if (!text.trim()) return;
     const userMsg = { role: 'user', text };
-    setMessages(prev => [...prev, userMsg]);
+    const newHistory = [...messages, userMsg];
+    setMessages(newHistory);
     setInput('');
     setLoading(true);
 
-    // Simulated AI Logic based on context
-    setTimeout(() => {
-      let response = "I'm analyzing your profile...";
-      
-      const lower = text.toLowerCase();
-      if (lower.includes('score') || lower.includes('low')) {
-        if (latest && latest.score < 70) {
-          response = `Your latest score is ${latest.score}%. The main issues are ${latest.keyword < 50 ? 'missing critical keywords' : ''} ${latest.impact < 50 ? 'and a lack of quantifiable metrics' : ''}. I recommend using more action verbs like 'Spearheaded' and adding specific percentages to your achievements.`;
-        } else {
-          response = "Your score is actually quite strong! To reach 90%+, focus on highly specific industry keywords and ensure your formatting is 100% standard.";
-        }
-      } else if (lower.includes('project')) {
-        response = "For your projects, make sure to highlight the 'Why' and the 'Result'. Instead of 'Built an app', try 'Architected a scalable app using React/Node that reduced load times by 30%'. Should I help you rewrite a specific project bullet?";
-      } else if (lower.includes('job') || lower.includes('add')) {
-        response = "To match a specific job, paste the Job Description in our 'Job Matcher' tool. Generally, you should align your top 5 skills exactly with the first 5 requirements of the JD.";
-      } else {
-        response = "That's a great question. Based on your current trajectory, I suggest focusing on 'Impact-First' writing. Every bullet point should start with a strong action verb and end with a measurable outcome.";
-      }
+    try {
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY");
+      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
 
-      setMessages(prev => [...prev, { role: 'assistant', text: response }]);
-      setLoading(false);
-    }, 1000);
+      const latestContext = scans.length > 0 
+        ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues)}. Improvements: ${JSON.stringify(scans[0].improvements)}. RAW RESUME TEXT: """${scans[0].text}"""`
+        : `No resume uploaded yet.`;
+
+      const sysMsg = { 
+        role: "system", 
+        content: `You are a world-class AI Career Coach. You help users improve their resume. 
+        Context about the user's latest resume analysis: ${latestContext}
+        Keep responses concise, friendly, encouraging, and highly actionable (max 3 sentences). Do NOT use markdown bold text.` 
+      };
+
+      const groqMsgs = [
+         sysMsg,
+         ...newHistory.map(m => ({ role: m.role, content: m.text }))
+      ];
+
+      const completion = await groq.chat.completions.create({
+        messages: groqMsgs,
+        model: "llama-3.1-8b-instant"
+      });
+
+      const responseText = completion.choices[0]?.message?.content || "I couldn't process that.";
+      setMessages(prev => [...prev, { role: 'assistant', text: responseText }]);
+    } catch (err) {
+      console.error("Coach Error:", err);
+      setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I am having trouble connecting to the API right now." }]);
+    }
+    setLoading(false);
   };
 
   return (

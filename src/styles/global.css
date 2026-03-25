@@ -270,67 +270,107 @@ body {
 
 /* ════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS
-═══════════════════════════════════════════ */
+══════════════════════════════════════════════ */
 
-/* Tablet  (< 960px) */
+/* Hide desktop sidebar on mobile/tablet */
+@media (max-width: 860px) {
+  .sidebar-panel { display: none !important; }
+  .hide-desktop  { display: flex !important; }
+}
+@media (min-width: 861px) {
+  .hide-desktop  { display: none !important; }
+}
+
+/* ── Tablet (≤ 960px) ── */
 @media (max-width: 960px) {
   .hide-tablet { display: none !important; }
-  .hero-grid  { grid-template-columns: 1fr !important; text-align: center !important; gap: 48px !important; }
+
+  /* Landing */
+  .hero-grid  { grid-template-columns: 1fr !important; text-align: center !important; gap: 40px !important; padding: 56px 20px 0 !important; }
   .hero-grid > div:first-child { display: flex; flex-direction: column; align-items: center; }
-  .how-grid   { grid-template-columns: 1fr !important; gap: 40px !important; }
+  .how-grid   { grid-template-columns: 1fr !important; gap: 32px !important; }
   .how-cards  { grid-template-columns: 1fr 1fr !important; }
-  .stats-row  { gap: 24px !important; padding-top: 28px !important; justify-content: center !important; }
-  .stats-row > div { padding: 0 20px !important; }
+  .stats-row  { gap: 20px !important; padding-top: 24px !important; justify-content: center !important; flex-wrap: wrap; }
+  .pricing-grid { grid-template-columns: 1fr !important; max-width: 480px !important; margin: 0 auto; }
+
+  /* Results */
   .results-grid { grid-template-columns: 1fr !important; }
-  .pricing-grid { grid-template-columns: 1fr !important; max-width: 420px !important; }
-  .cta-row    { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
+  .cta-row    { flex-direction: column !important; align-items: stretch !important; gap: 20px !important; }
+  .cta-btns   { align-items: stretch !important; }
+  .cta-btns .btn { width: 100%; justify-content: center; }
+
+  /* Dashboard */
+  .dash-main  { padding: 24px 20px !important; }
 }
 
-/* Show hamburger on tablet/mobile */
-@media (max-width: 960px) { .hide-desktop { display: flex !important; } }
-@media (min-width: 961px) { .hide-desktop { display: none !important; } }
-
-/* Mobile (< 640px) */
+/* ── Mobile (≤ 640px) ── */
 @media (max-width: 640px) {
-  .hide-mobile   { display: none !important; }
-  .sidebar-panel { display: none !important; }
+  .hide-mobile { display: none !important; }
 
-  .hero-grid   { padding: 56px 16px 0 !important; }
-  .hero-headline { font-size: clamp(2.4rem, 10vw, 3.6rem) !important; }
-  .hero-sub    { font-size: .95rem !important; }
-  .cta-group   { flex-direction: column !important; width: 100%; }
+  /* ── Nav ── */
+  .nav-items  { display: none !important; }
+  .nav-mobile-show { display: flex !important; }
+
+  /* ── Landing ── */
+  .hero-headline  { font-size: clamp(2.2rem, 10vw, 3rem) !important; letter-spacing: -.04em !important; }
+  .hero-sub       { font-size: .95rem !important; }
+  .cta-group      { flex-direction: column !important; width: 100%; gap: 10px !important; }
   .cta-group .btn { width: 100% !important; justify-content: center; }
-  .stats-row   { flex-wrap: wrap !important; gap: 20px 0 !important; }
+  .stats-row      { flex-wrap: wrap !important; gap: 16px 0 !important; }
   .stats-row > div { border-right: none !important; padding: 0 16px !important; }
+  .proof-bar      { gap: 12px !important; overflow-x: auto; padding: 14px 16px !important; }
+  .how-cards      { grid-template-columns: 1fr !important; }
+  .section-pad    { padding: 56px 16px !important; }
 
-  .proof-bar   { gap: 16px !important; justify-content: flex-start !important; overflow-x: auto; padding: 16px !important; }
-  .how-cards   { grid-template-columns: 1fr !important; }
-  .how-cards > div:last-child { grid-column: 1 !important; }
-
-  .section-pad { padding: 64px 16px !important; }
-
-  .result-header { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
-  .result-header-btns { width: 100%; display: flex; gap: 8px; }
+  /* ── Results ── */
+  .result-header       { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+  .result-header-btns  { width: 100%; display: flex; gap: 8px; }
   .result-header-btns .btn { flex: 1; justify-content: center; }
+  .score-row           { flex-direction: column !important; align-items: center !important; text-align: center; gap: 16px !important; }
 
-  .score-row   { flex-direction: column !important; align-items: center !important; text-align: center; gap: 16px !important; }
-  .kpi-grid    { grid-template-columns: 1fr 1fr !important; }
-  .chart-row   { grid-template-columns: 1fr !important; }
+  /* ── Dashboard ── */
+  .dash-main  { padding: 16px 12px !important; }
 
-  .cta-row     { flex-direction: column !important; gap: 20px !important; padding: 24px 20px !important; }
-  .cta-row .cta-btns { width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
-  .cta-row .cta-btns .btn { width: 100%; justify-content: center; }
+  /* KPI cards 2-col on mobile */
+  #dash-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
 
-  .plan-grid   { gap: 14px !important; }
-  .modal-card  { padding: 28px 20px !important; border-radius: 20px !important; }
-  .dash-main   { padding: 20px 16px !important; }
-  .dash-kpi    { grid-template-columns: 1fr 1fr !important; }
-  .pricing-head { padding: 60px 16px 40px !important; }
+  /* Chart row single col */
+  .chart-row  { grid-template-columns: 1fr !important; }
+
+  /* Scans list: hide right side badges on very small */
+  .scan-badges { display: none; }
+
+  /* ── Scan Modal ── */
+  .scan-modal-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Resume Builder ── */
+  .rb-form-row { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Cover Letter / Interview / Salary ── */
+  .usp-tone-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .usp-market-row { flex-direction: column !important; }
+
+  /* ── CTA Banner ── */
+  .cta-row    { flex-direction: column !important; gap: 16px !important; padding: 22px 18px !important; }
+  .cta-btns   { width: 100% !important; align-items: stretch !important; }
+  .cta-btns .btn { width: 100% !important; justify-content: center !important; }
+
+  /* ── Pricing ── */
+  .pricing-head { padding: 56px 16px 32px !important; }
+  .plan-grid    { gap: 12px !important; }
+
+  /* ── Modals ── */
+  .modal-card   { padding: 24px 18px !important; border-radius: 20px !important; min-width: 0 !important; }
 }
 
-/* Very small (< 380px) */
-@media (max-width: 380px) {
-  .kpi-grid  { grid-template-columns: 1fr !important; }
-  .dash-kpi  { grid-template-columns: 1fr !important; }
-  .cta-group .btn { font-size: .9rem !important; padding: 13px 20px !important; }
+/* ── Very small (≤ 390px) ── */
+@media (max-width: 390px) {
+  #dash-kpi-grid { grid-template-columns: 1fr !important; }
+  .dash-main     { padding: 12px 10px !important; }
+  .cta-group .btn { font-size: .88rem !important; padding: 13px 18px !important; }
+  .hero-headline  { font-size: clamp(1.9rem, 9vw, 2.4rem) !important; }
 }
+
