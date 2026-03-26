@@ -153,7 +153,7 @@ const App = () => {
 
   const openAuth = () => setShowAuth(true);
 
-  const screens = {
+  const screens = React.useMemo(() => ({
     landing:   <Landing   go={go} onAuth={openAuth} />,
     upload:    <Upload    go={go} user={user} onAuth={openAuth} setResults={setResults} onNotify={showToast} />,
     results:   <Results   go={go} user={user} onAuth={openAuth} data={results} />,
@@ -161,7 +161,7 @@ const App = () => {
     dashboard: <Dashboard go={go} user={user} onAuth={openAuth} onNotify={showToast} />,
     resumebuilder: <ResumeBuilder go={go} user={user} />,
     livebuilder: <LiveBuilder go={go} user={user} onDataChange={setResumeData} onNotify={showToast} />,
-  };
+  }), [user, results, showToast, page, openAuth]); // Include page to ensure freshness on navigation
 
   const LogoutModal = () => (
     <div className="rf" style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>

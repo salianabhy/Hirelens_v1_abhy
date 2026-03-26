@@ -23,6 +23,11 @@ const Upload = ({ go, user, onAuth, setResults }) => {
   const [apiError, setApiError] = useState(null);
   const inputRef = useRef(null);
   const roleRef  = useRef(null);
+  const ivRef    = useRef(null);
+
+  useEffect(() => {
+    return () => { if (ivRef.current) clearInterval(ivRef.current); };
+  }, []);
 
   const pick = f => { if (f) { setFile(f); setApiError(null); } };
 
@@ -114,7 +119,7 @@ const Upload = ({ go, user, onAuth, setResults }) => {
   };
 
   const analyze = async () => {
-    if (!file) return;
+    if (!file || loading) return;
     setLoading(true);
     setStep(0);
     setApiError(null);
@@ -161,12 +166,13 @@ const Upload = ({ go, user, onAuth, setResults }) => {
 
     // ── Progress Animation ──
     let i = 0;
-    const iv = setInterval(() => {
+    ivRef.current = setInterval(() => {
       i++;
       if (i < STEPS.length) {
         setStep(i);
       } else {
-        clearInterval(iv);
+        clearInterval(ivRef.current);
+        ivRef.current = null;
         processPromise.then((success) => {
           if (success) {
             if (onNotify) onNotify("Resume analyzed and saved to dashboard!");
