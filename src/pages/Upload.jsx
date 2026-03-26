@@ -59,58 +59,81 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
     }
   };
 
+  const ML_BACKEND = 'http://localhost:8000';
+
   const generateAIAssessment = async (text, fileName, targetRole) => {
-    const truncatedText = text?.substring(0, 10000) || ""; 
+    const truncatedText = text?.substring(0, 10000) || '';
+
+    // ── Attempt 1: Custom ML backend (running locally) ─────────────────────
+    try {
+      const res = await fetch(`${ML_BACKEND}/api/score-resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: truncatedText, job_description: targetRole || '' }),
+        signal: AbortSignal.timeout(8000), // 8 s cap
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        const d = json.data;
+        const finalScore = d.score ?? 45;
+        console.log('[Resumeit] Scored by custom ML model ✅', d.ml_model_used ? '(XGBoost)' : '(heuristic)');
+        return {
+          name:         fileName,
+          score:        finalScore,
+          ats:          d.ats        ?? 45,
+          keyword:      d.keyword    ?? 45,
+          formatting:   d.formatting ?? 45,
+          impact:       d.impact     ?? 45,
+          signals:      { action_verbs: [], tech_keywords: [], metrics: [] },
+          issues:       d.issues        || [],
+          improvements: d.improvements || [],
+          date:         new Date().toISOString(),
+          risk:         d.risk ?? (finalScore < 60 ? 'High Risk' : finalScore < 80 ? 'Medium Risk' : 'Low Risk'),
+          text:         truncatedText,
+          source:       'ml_backend',
+        };
+      }
+    } catch (mlErr) {
+      console.warn('[Resumeit] ML backend unavailable, falling back to Groq:', mlErr.message);
+    }
+
+    // ── Attempt 2: Groq LLM fallback ──────────────────────────────────────
     const prompt = `
-      You are an expert ATS (Applicant Tracking System) and senior technical recruiter.
+      You are an expert ATS and senior technical recruiter.
       Evaluate the following resume against the target role: ${targetRole || 'General/Unspecified'}.
-      
       Resume Text: ${truncatedText}
-      
-      You MUST respond with ONLY valid JSON strictly matching the following schema. Make sure issues and improvements are arrays brackets ([]), NOT objects ({}):
+      Respond with ONLY valid JSON matching this exact schema:
       {
-        "score": 85,
-        "ats": 80,
-        "keyword": 90,
-        "formatting": 85,
-        "impact": 75,
-        "signals": {
-          "action_verbs": ["Developed", "Engineered"],
-          "tech_keywords": ["React", "Python"],
-          "metrics": ["Increased by 20%"]
-        },
-        "issues": [
-          { "label": "Missing Metrics", "desc": "Quantify your achievements with numbers or percentages.", "sev": "Critical" },
-          { "label": "Vague Summary", "desc": "Refine your profile summary to align with the target role.", "sev": "Medium" }
-        ],
-        "improvements": ["Add more metrics to impact descriptions", "Use stronger action verbs"]
+        "score": 85, "ats": 80, "keyword": 90, "formatting": 85, "impact": 75,
+        "signals": { "action_verbs": ["Developed"], "tech_keywords": ["React"], "metrics": ["20%"] },
+        "issues": [{ "label": "Missing Metrics", "desc": "Quantify your achievements.", "sev": "Critical" }],
+        "improvements": ["Add metrics", "Use stronger action verbs"]
       }
     `;
     try {
       const completion = await callGroq(prompt, { json: true });
-      let textContent = completion.choices[0]?.message?.content || "{}";
+      let textContent = completion.choices[0]?.message?.content || '{}';
       textContent = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
-      
-      let parsed = JSON.parse(textContent);
+      const parsed = JSON.parse(textContent);
       const finalScore = parsed.score || 45;
-
       return {
-        name: fileName,
-        score: finalScore,
-        ats: parsed.ats || 45,
-        keyword: parsed.keyword || 45,
-        formatting: parsed.formatting || 45,
-        impact: parsed.impact || 45,
-        signals: parsed.signals || { action_verbs: [], tech_keywords: [], metrics: [] },
-        issues: parsed.issues || [],
+        name:         fileName,
+        score:        finalScore,
+        ats:          parsed.ats        || 45,
+        keyword:      parsed.keyword    || 45,
+        formatting:   parsed.formatting || 45,
+        impact:       parsed.impact     || 45,
+        signals:      parsed.signals    || { action_verbs: [], tech_keywords: [], metrics: [] },
+        issues:       parsed.issues     || [],
         improvements: parsed.improvements || [],
-        date: new Date().toISOString(),
-        risk: finalScore < 60 ? 'High Risk' : finalScore < 80 ? 'Medium Risk' : 'Low Risk',
-        text: truncatedText
+        date:         new Date().toISOString(),
+        risk:         finalScore < 60 ? 'High Risk' : finalScore < 80 ? 'Medium Risk' : 'Low Risk',
+        text:         truncatedText,
+        source:       'groq_fallback',
       };
     } catch (err) {
-      console.error("Groq API Error:", err);
-      throw new Error(`API Error: ${err.message || "Failed to connect to AI"}`);
+      console.error('Groq API Error:', err);
+      throw new Error(`Analysis failed: ${err.message || 'Could not connect to any scoring service'}`);
     }
   };
 
