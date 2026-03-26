@@ -63,8 +63,24 @@ const Upload = ({ go, user, onAuth, setResults }) => {
     const prompt = `
       You are an expert ATS (Applicant Tracking System) and senior technical recruiter.
       Evaluate the following resume against the target role: ${targetRole || 'General/Unspecified'}.
+      
       Resume Text: ${truncatedText}
-      Provide a JSON response with score, ats, keyword, formatting, impact, signals, issues, and improvements.
+      
+      You MUST respond with ONLY valid JSON strictly matching the following schema. Make sure issues and improvements are arrays brackets ([]), NOT objects ({}):
+      {
+        "score": 85,
+        "ats": 80,
+        "keyword": 90,
+        "formatting": 85,
+        "impact": 75,
+        "signals": {
+          "action_verbs": ["Developed", "Engineered"],
+          "tech_keywords": ["React", "Python"],
+          "metrics": ["Increased by 20%"]
+        },
+        "issues": ["No specific career goals stated", "A project lacks metrics"],
+        "improvements": ["Add more metrics to impact descriptions", "Use stronger action verbs"]
+      }
     `;
     try {
       const completion = await callGroq(prompt);

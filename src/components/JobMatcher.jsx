@@ -9,6 +9,23 @@ const JobMatcher = ({ resumeText = "" }) => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setJd(text);
+    } catch (e) {
+      alert("Clipboard access denied. Please paste manually.");
+    }
+  };
+
+  const sampleJD = `Senior Frontend Engineer (React)
+Requirements:
+- 4+ years of experience with React, JavaScript (ES6+), and modern CSS
+- Strong understanding of web performance, accessibility, and clean architecture
+- Experience with state management (Redux, Zustand)
+- Comfortable with REST APIs and asynchronous programming
+- Strong mentorship and communication skills`;
+
   const performMatch = async () => {
     if (!jd.trim()) return;
     setLoading(true);
@@ -70,17 +87,126 @@ const JobMatcher = ({ resumeText = "" }) => {
       </div>
 
       {!result ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <textarea 
-            className="inp" 
-            placeholder="Paste the Job Description here..." 
-            style={{ height: 220, fontSize: '.85rem', lineHeight: 1.6 }}
-            value={jd}
-            onChange={e => setJd(e.target.value)}
-          />
-          <Btn v="dark" sz="lg" pill full onClick={performMatch} disabled={loading || !jd.trim()}>
-            {loading ? 'Analyzing Talent-JD Intersection...' : 'Analyze Skill Gaps'}
-          </Btn>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, animation: 'fadeIn .4s ease' }}>
+          {/* Pre-Analysis Banner */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: 16, background: 'rgba(94,92,230,.05)', borderRadius: 16, border: '1px solid rgba(94,92,230,.15)' }}>
+            <div style={{ flex: '1 1 45%', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(94,92,230,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon id="star" size={14} color="var(--ind)" />
+              </div>
+              <div>
+                <p style={{ fontSize: '.75rem', fontWeight: 800 }}>Skill Extraction</p>
+                <p style={{ fontSize: '.65rem', color: 'var(--ts)' }}>Maps your skills to JD</p>
+              </div>
+            </div>
+            <div style={{ flex: '1 1 45%', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(48,209,88,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon id="target" size={14} color="var(--green)" />
+              </div>
+              <div>
+                <p style={{ fontSize: '.75rem', fontWeight: 800 }}>Keyword Density</p>
+                <p style={{ fontSize: '.65rem', color: 'var(--ts)' }}>Checks ATS thresholds</p>
+              </div>
+            </div>
+            <div style={{ flex: '1 1 45%', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,159,10,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon id="award" size={14} color="var(--amber)" />
+              </div>
+              <div>
+                <p style={{ fontSize: '.75rem', fontWeight: 800 }}>Experience Level</p>
+                <p style={{ fontSize: '.65rem', color: 'var(--ts)' }}>Validates seniority</p>
+              </div>
+            </div>
+            <div style={{ flex: '1 1 45%', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,59,48,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon id="trend" size={14} color="var(--red)" />
+              </div>
+              <div>
+                <p style={{ fontSize: '.75rem', fontWeight: 800 }}>Skill Gaps</p>
+                <p style={{ fontSize: '.65rem', color: 'var(--ts)' }}>Actionable roadmaps</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Premium Input Area */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 4px' }}>
+               <label style={{ fontSize: '.8rem', fontWeight: 700, letterSpacing: '-.01em' }}>Target Job Description</label>
+               <div style={{ display: 'flex', gap: 8 }}>
+                 <Btn v="ghost" sz="xs" pill onClick={() => setJd(sampleJD)}>Try Sample JD</Btn>
+                 <Btn v="ghost" sz="xs" pill onClick={handlePaste}><Icon id="file" size={12}/> Paste</Btn>
+                 <Btn v="ghost" sz="xs" pill onClick={() => setJd('')} disabled={!jd} style={{ opacity: jd ? 1 : 0.5 }}>Clear</Btn>
+               </div>
+            </div>
+            <div style={{ position: 'relative', borderRadius: 20, background: '#fff', border: '1px solid var(--bl)', padding: 2, transition: 'box-shadow .2s ease-in-out', boxShadow: '0 8px 30px rgba(0,0,0,0.03)' }} 
+                 onFocus={(e) => e.currentTarget.style.boxShadow = '0 0 0 4px rgba(94,92,230,.15)'}
+                 onBlur={(e) => e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.03)'}>
+              <textarea 
+                className="inp" 
+                placeholder="Paste the complete Job Description here... Our AI will cross-reference your resume profile instantly." 
+                style={{ height: 240, fontSize: '.85rem', lineHeight: 1.6, border: 'none', background: 'transparent', boxShadow: 'none', outline: 'none', padding: 20 }}
+                value={jd}
+                onChange={e => setJd(e.target.value)}
+              />
+              <div style={{ position: 'absolute', bottom: 12, right: 16, fontSize: '.7rem', fontWeight: 600, color: 'var(--tt)', background: '#fff', padding: '2px 6px', borderRadius: 6, pointerEvents: 'none' }}>
+                {jd.length} chars
+              </div>
+            </div>
+          </div>
+
+          {/* Expected Output Preview */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 20px', background: 'var(--s1)', borderRadius: 16, alignItems: 'center', opacity: 0.8 }}>
+            <div>
+               <p style={{ fontSize: '.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--ts)', letterSpacing: '.05em' }}>Expected Output</p>
+               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 6 }}>
+                 <p style={{ fontSize: '.8rem', fontWeight: 600 }}><Icon id="award" size={12} color="var(--ind)" /> Match Score</p>
+                 <p style={{ fontSize: '.8rem', fontWeight: 600 }}><Icon id="target" size={12} color="var(--red)" /> Skill Gaps</p>
+                 <p style={{ fontSize: '.8rem', fontWeight: 600 }}><Icon id="brain" size={12} color="var(--green)" /> AI Suggestions</p>
+               </div>
+            </div>
+          </div>
+
+          {/* Enhanced CTA */}
+          <div style={{ marginTop: 8 }}>
+            <button 
+              onClick={performMatch} 
+              disabled={loading || !jd.trim()}
+              style={{
+                width: '100%',
+                padding: '16px 24px',
+                borderRadius: 100,
+                border: 'none',
+                background: (!jd.trim() || loading) ? 'var(--s2)' : 'linear-gradient(135deg, #1D1D1F 0%, #434347 100%)',
+                color: (!jd.trim() || loading) ? 'var(--ts)' : 'white',
+                fontSize: 16,
+                fontWeight: 800,
+                cursor: (!jd.trim() || loading) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                transition: 'all .3s cubic-bezier(.22,1,.36,1)',
+                boxShadow: (!jd.trim() || loading) ? 'none' : '0 12px 28px rgba(0,0,0,0.18)',
+                transform: (!jd.trim() || loading) ? 'scale(1)' : 'translateY(0)'
+              }}
+              onMouseEnter={(e) => { if (jd.trim() && !loading) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 16px 36px rgba(0,0,0,0.22)'; } }}
+              onMouseLeave={(e) => { if (jd.trim() && !loading) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)'; } }}
+              onMouseDown={(e) => { if (jd.trim() && !loading) e.currentTarget.style.transform = 'scale(0.98)'; }}
+              onMouseUp={(e) => { if (jd.trim() && !loading) e.currentTarget.style.transform = 'scale(1.02)'; }}
+            >
+              {loading ? (
+                <>
+                  <div className="spin" style={{ width: 18, height: 18, border: '2.5px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
+                  Analyzing Match...
+                </>
+              ) : (
+                <>🚀 Analyze My Job Match</>
+              )}
+            </button>
+            <p style={{ textAlign: 'center', fontSize: '.75rem', color: 'var(--ts)', marginTop: 14, fontWeight: 500 }}>
+              ✨ AI will suggest exactly how to improve your resume for this role
+            </p>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32, animation: 'fadeIn .4s ease' }}>

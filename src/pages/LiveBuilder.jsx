@@ -68,7 +68,7 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
             { "id": 1, "title": "string", "tech": "React, Node", "desc": "Project description" }
           ],
           "education": [
-            { "id": 1, "school": "string", "degree": "string", "year": "YYYY" }
+            { "id": 1, "school": "string", "degree": "string", "year": "YYYY", "grade": "string (e.g. 3.8 CGPA or 85%)" }
           ]
         }
         
@@ -166,8 +166,8 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
     if (!jdBuffer.trim() || loadingAI) return;
     setLoadingAI(true);
     try {
-      const prompt = `Extract top 6 critical technical hard skills from this Job Description. Return them strictly as a comma-separated list. Nothing else.
-      JD: "${jdBuffer}"`;
+      const prompt = `Extract top 6 critical technical hard skills from this Job or Internship Description. Return them strictly as a comma-separated list. Nothing else.
+      JD / Internship Description: "${jdBuffer}"`;
       const completion = await callGroq(prompt);
 
 
@@ -220,10 +220,38 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(90, 90, 90);
-      const contactText = `${data.location || ""} | ${data.email || ""} | ${data.linkedin || ""}${data.github ? ` | ${data.github}` : ''}`;
+      const contactText = [data.location, data.email, data.linkedin, data.github].filter(Boolean).join(' | ');
       doc.text(contactText, pageWidth / 2, y, { align: 'center' });
       doc.setTextColor(0, 0, 0);
       y += 14;
+
+      // Education (At the top)
+      if (data.education && data.education.length > 0) {
+        sectionHeader("Education");
+        data.education.forEach(edu => {
+          checkPage(15);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          const schoolLines = doc.splitTextToSize(edu.school || "", pageWidth - (margin * 2) - 30);
+          doc.text(edu.year || "", pageWidth - margin, y, { align: 'right' });
+          schoolLines.forEach(line => {
+            doc.text(line, margin, y);
+            y += 4.5;
+          });
+          y += 0.5;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9.5);
+          let degTxt = edu.degree || "";
+          if (edu.grade) degTxt += ` | ${edu.grade}`;
+          const degLines = doc.splitTextToSize(degTxt, pageWidth - (margin * 2));
+          degLines.forEach(line => {
+             doc.text(line, margin, y);
+             y += 4.5;
+          });
+          y += 3.5;
+        });
+        y += 2;
+      }
 
       // Summary
       if (data.summary) {
@@ -246,13 +274,43 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
           checkPage(20);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(10);
-          doc.text(`${exp.company || ""} — ${exp.role || ""}`, margin, y);
+          const roleLines = doc.splitTextToSize(`${exp.company || ""} — ${exp.role || ""}`, pageWidth - (margin * 2) - 35);
           doc.text(exp.period || "", pageWidth - margin, y, { align: 'right' });
-          y += 5;
+          roleLines.forEach(line => {
+            doc.text(line, margin, y);
+            y += 4.5;
+          });
+          y += 0.5;
           doc.setFont("helvetica", "normal");
           doc.setFontSize(9.5);
           const lines = doc.splitTextToSize(exp.desc || "", pageWidth - (margin * 2) - 4);
           lines.forEach(line => {
+            checkPage(6);
+            doc.text("• " + line, margin + 4, y);
+            y += 4.5;
+          });
+          y += 4;
+        });
+      }
+
+      // Projects
+      if (data.projects && data.projects.length > 0) {
+        sectionHeader("Projects");
+        data.projects.forEach(p => {
+          checkPage(15);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          const pHeadLines = doc.splitTextToSize(`${p.title || ""} | ${p.tech || ""}`, pageWidth - (margin * 2));
+          pHeadLines.forEach(line => {
+            checkPage(6);
+            doc.text(line, margin, y);
+            y += 4.5;
+          });
+          y += 0.5;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9.5);
+          const pLines = doc.splitTextToSize(p.desc || "", pageWidth - (margin * 2) - 4);
+          pLines.forEach(line => {
             checkPage(6);
             doc.text("• " + line, margin + 4, y);
             y += 4.5;
@@ -273,44 +331,6 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
            y += 4.5;
          });
          y += 6;
-      }
-
-      // Projects
-      if (data.projects && data.projects.length > 0) {
-        sectionHeader("Projects");
-        data.projects.forEach(p => {
-          checkPage(15);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          doc.text(`${p.title || ""} | ${p.tech || ""}`, margin, y);
-          y += 5;
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9.5);
-          const pLines = doc.splitTextToSize(p.desc || "", pageWidth - (margin * 2) - 4);
-          pLines.forEach(line => {
-            checkPage(6);
-            doc.text("• " + line, margin + 4, y);
-            y += 4.5;
-          });
-          y += 4;
-        });
-      }
-
-      // Education
-      if (data.education && data.education.length > 0) {
-        sectionHeader("Education");
-        data.education.forEach(edu => {
-          checkPage(15);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          doc.text(edu.school || "", margin, y);
-          doc.text(edu.year || "", pageWidth - margin, y, { align: 'right' });
-          y += 5;
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9.5);
-          doc.text(edu.degree || "", margin, y);
-          y += 8;
-        });
       }
 
       doc.save(`${(data.name || "Resume").replace(/\s+/g, '_')}_Elite_Resume.pdf`);
@@ -401,19 +421,23 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
            {activeLayer === 'personal' && (
              <div className="rf">
                <div className="rb-form-full" style={{ marginBottom: 24 }}>
-                  <label className="rb-label">Auto-Optimize with Job Description</label>
+                  <label className="rb-label">Auto-Optimize with Job / Internship Description</label>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <textarea className="inp" value={jdBuffer} onChange={e => setJdBuffer(e.target.value)} placeholder="Paste JD here to auto-align skills..." style={{ height: 60, fontSize: '.8rem' }} />
+                    <textarea className="inp" value={jdBuffer} onChange={e => setJdBuffer(e.target.value)} placeholder="Paste Job or Internship Description here to auto-align skills..." style={{ height: 60, fontSize: '.8rem' }} />
                     <Btn v="ind" sz="sm" pill onClick={autoOptimize} disabled={!jdBuffer.trim()}><Icon id="zap" size={12} color="white" /> Optimize</Btn>
                   </div>
                </div>
                <div className="rb-form-row">
                  <input className="inp" placeholder="Full Name" value={data.name} onChange={e => update('name', e.target.value)} />
-                 <input className="inp" placeholder="Role" value={data.title} onChange={e => update('title', e.target.value)} />
+                 <input className="inp" placeholder="Target Role / Internship" value={data.title} onChange={e => update('title', e.target.value)} />
                </div>
                <div className="rb-form-row">
                  <input className="inp" placeholder="Email" value={data.email} onChange={e => update('email', e.target.value)} />
                  <input className="inp" placeholder="Location" value={data.location} onChange={e => update('location', e.target.value)} />
+               </div>
+               <div className="rb-form-row" style={{ marginTop: 12 }}>
+                 <input className="inp" placeholder="LinkedIn URL (linkedin.com/in/...)" value={data.linkedin || ''} onChange={e => update('linkedin', e.target.value)} />
+                 <input className="inp" placeholder="GitHub URL (github.com/...)" value={data.github || ''} onChange={e => update('github', e.target.value)} />
                </div>
                <div className="rb-form-full" style={{ marginTop: 12 }}>
                   <label className="rb-label">Executive Summary</label>
@@ -509,12 +533,51 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
                       </div>
                       <div className="rb-form-row">
                         <input className="inp" placeholder="School/University" value={edu.school} onChange={e => updateItem('education', edu.id, 'school', e.target.value)} />
-                        <input className="inp" placeholder="Year" value={edu.year} onChange={e => updateItem('education', edu.id, 'year', e.target.value)} />
                       </div>
-                      <input className="inp" placeholder="Degree" style={{ marginTop: 12 }} value={edu.degree} onChange={e => updateItem('education', edu.id, 'degree', e.target.value)} />
+                      <div className="rb-form-row" style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                         <label style={{ fontSize: 10, color: 'var(--ts)', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                           Start Date
+                           <input type="month" className="inp" style={{ width: '100%' }} value={edu.startDate || ''} onChange={e => {
+                             const s = e.target.value;
+                             const eD = edu.endDate || '';
+                             const curr = edu.current || false;
+                             const formatMY = v => { if (!v) return ''; const [y, m] = v.split('-'); return new Date(y, parseInt(m)-1).toLocaleDateString('en-US', {month: 'short', year: 'numeric'}); };
+                             const str = (formatMY(s) + (formatMY(s) && (curr || formatMY(eD)) ? ' - ' : '') + (curr ? 'Present' : formatMY(eD)));
+                             const newEdu = [...data.education]; const x = newEdu.find(a => a.id === edu.id); 
+                             if (x) { x.startDate = s; x.year = str; update('education', newEdu); }
+                           }} />
+                         </label>
+                         <label style={{ fontSize: 10, color: 'var(--ts)', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                           End Date
+                           <input type="month" className="inp" style={{ width: '100%', opacity: edu.current ? 0.3 : 1 }} disabled={edu.current} value={edu.endDate || ''} onChange={e => {
+                             const s = edu.startDate || '';
+                             const eD = e.target.value;
+                             const curr = edu.current || false;
+                             const formatMY = v => { if (!v) return ''; const [y, m] = v.split('-'); return new Date(y, parseInt(m)-1).toLocaleDateString('en-US', {month: 'short', year: 'numeric'}); };
+                             const str = (formatMY(s) + (formatMY(s) && (curr || formatMY(eD)) ? ' - ' : '') + (curr ? 'Present' : formatMY(eD)));
+                             const newEdu = [...data.education]; const x = newEdu.find(a => a.id === edu.id); 
+                             if (x) { x.endDate = eD; x.year = str; update('education', newEdu); }
+                           }} />
+                         </label>
+                         <label style={{ fontSize: 10, color: 'var(--ts)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginTop: 14 }}>
+                           <input type="checkbox" checked={edu.current || false} onChange={e => {
+                             const s = edu.startDate || '';
+                             const eD = edu.endDate || '';
+                             const curr = e.target.checked;
+                             const formatMY = v => { if (!v) return ''; const [y, m] = v.split('-'); return new Date(y, parseInt(m)-1).toLocaleDateString('en-US', {month: 'short', year: 'numeric'}); };
+                             const str = (formatMY(s) + (formatMY(s) && (curr || formatMY(eD)) ? ' - ' : '') + (curr ? 'Present' : formatMY(eD)));
+                             const newEdu = [...data.education]; const x = newEdu.find(a => a.id === edu.id); 
+                             if (x) { x.current = curr; x.year = str; update('education', newEdu); }
+                           }} /> Present
+                         </label>
+                      </div>
+                      <div className="rb-form-row" style={{ marginTop: 12 }}>
+                        <input className="inp" placeholder="Degree" value={edu.degree} onChange={e => updateItem('education', edu.id, 'degree', e.target.value)} />
+                        <input className="inp" placeholder="CGPA / Percentage" value={edu.grade || ''} onChange={e => updateItem('education', edu.id, 'grade', e.target.value)} />
+                      </div>
                    </div>
                  ))}
-                 <Btn v="ghost" sz="sm" pill onClick={() => addItem('education', { school: '', degree: '', year: '' })}>+ Add Education</Btn>
+                 <Btn v="ghost" sz="sm" pill onClick={() => addItem('education', { school: '', degree: '', year: '', grade: '' })}>+ Add Education</Btn>
               </div>
            )}
 
@@ -576,59 +639,103 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
            <Btn v={showATS ? 'ind' : 'light'} sz="sm" pill onClick={() => setShowATS(!showATS)}><Icon id="target" size={14} color={showATS ? 'white' : 'var(--tp)'} /> {showATS ? 'ATS Active' : 'Recruiter Mode'}</Btn>
         </div>
 
-        <div id="resume-preview" className="a4-preview" style={{ 
-          width: '100%', maxWidth: '595px', minHeight: '842px', background: 'white', boxShadow: '0 30px 60px rgba(0,0,0,.08)', 
-          padding: window.innerWidth > 640 ? '50px 65px' : '30px 25px', display: 'flex', flexDirection: 'column', color: '#000', position: 'relative', fontFamily: "'Inter', sans-serif", wordBreak: 'break-word'
+        <div id="resume-preview-wrapper" style={{ 
+          width: '100%', maxWidth: '595px', minHeight: '842px', height: 'max-content', flexShrink: 0,
+          filter: 'drop-shadow(0 16px 24px rgba(0,0,0,0.12))', paddingBottom: 40
         }}>
+          <div id="resume-preview" className="a4-preview" style={{ 
+            width: '100%', height: '100%', minHeight: '842px', background: 'white',
+            padding: window.innerWidth > 640 ? '50px 65px' : '30px 25px', display: 'flex', flexDirection: 'column', color: '#000', position: 'relative', fontFamily: "'Inter', sans-serif", wordBreak: 'break-word'
+          }}>
            
            {/* ATS Terminal Overlay */}
            {showATS && (
              <div style={{ position: 'absolute', inset: 0, background: '#0a0a0a', color: '#00ff41', padding: '60px 50px', zIndex: 10, fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.5, overflowY: 'auto' }}>
                 <div style={{ borderBottom: '1px solid #00ff41', paddingBottom: 10, marginBottom: 20, opacity: 0.8 }}>[ ATS PARSING SIMULATOR v4.2 ]</div>
-                <div style={{ marginBottom: 30 }}><div style={{ color: '#fff', fontWeight: 700 }}>[ENTITY_NAME]</div><div>{data.name.toUpperCase()}</div></div>
+                <div style={{ marginBottom: 30 }}><div style={{ color: '#fff', fontWeight: 700 }}>[ENTITY_NAME]</div><div>{(data.name || '').toUpperCase()}</div></div>
                 <div style={{ marginBottom: 30 }}><div style={{ color: '#fff', fontWeight: 700 }}>[EXTRACTED_SKILLS]</div><div>{data.skills}</div></div>
                 <div style={{ marginBottom: 20 }}><div style={{ color: '#fff', fontWeight: 700 }}>[WORK_HISTORY]</div>{data.experience.map(e => <div key={e.id} style={{ marginBottom: 10 }}>{e.company}: {e.desc}</div>)}</div>
              </div>
            )}
 
            <div style={{ textAlign: 'center', marginBottom: 35 }}>
-              <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 6px', letterSpacing: '-.04em' }}>{data.name.toUpperCase()}</h1>
-              <div style={{ fontSize: '11px', color: '#666' }}>{data.location} | {data.email} | {data.linkedin}</div>
+              <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 6px', letterSpacing: '-.04em' }}>{(data.name || '').toUpperCase()}</h1>
+              <div style={{ fontSize: '11px', color: '#666' }}>
+                {[data.location, data.email, data.linkedin, data.github].filter(Boolean).join(' | ')}
+              </div>
            </div>
 
-           <section style={{ marginBottom: 28 }}>
-              <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 10 }}>SUMMARY</h4>
-              <p style={{ fontSize: '11px', lineHeight: 1.6 }}>{data.summary}</p>
-           </section>
+           {/* EDUCATION */}
+           {data.education && data.education.length > 0 && (
+             <section style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 12 }}>EDUCATION</h4>
+                {data.education.map(edu => (
+                  <div key={edu.id} style={{ marginBottom: 10 }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontWeight: 800, fontSize: '11px', gap: 16 }}>
+                       <span style={{ flex: 1, lineHeight: 1.4 }}>{edu.school}</span>
+                       <span style={{ textAlign: 'right', flexShrink: 0, maxWidth: '50%', lineHeight: 1.4 }}>{edu.year}</span>
+                     </div>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '11px', marginTop: 2, gap: 16 }}>
+                       <span style={{ flex: 1, lineHeight: 1.4 }}>{edu.degree}</span>
+                       {edu.grade && <span style={{ fontWeight: 600, textAlign: 'right', flexShrink: 0, maxWidth: '60%', lineHeight: 1.4 }}>{edu.grade}</span>}
+                     </div>
+                  </div>
+                ))}
+             </section>
+           )}
 
-           <section style={{ marginBottom: 20 }}>
-              <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 14 }}>EXPERIENCE</h4>
-              {data.experience.map(exp => (
-                <div key={exp.id} style={{ marginBottom: 15 }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '12px' }}><span>{exp.company} — {exp.role}</span><span>{exp.period}</span></div>
-                   <p style={{ fontSize: '11px', marginTop: 5 }}>• {exp.desc}</p>
-                </div>
-              ))}
-           </section>
+           {/* SUMMARY */}
+           {data.summary && (
+             <section style={{ marginBottom: 24 }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 10 }}>SUMMARY</h4>
+                <p style={{ fontSize: '11px', lineHeight: 1.6 }}>{data.summary}</p>
+             </section>
+           )}
 
-           <section style={{ marginBottom: 24 }}>
-              <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 12 }}>SKILLS</h4>
-              <p style={{ fontSize: '11px' }}>{data.skills}</p>
-           </section>
+           {/* EXPERIENCE */}
+           {data.experience && data.experience.length > 0 && (
+             <section style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 14 }}>EXPERIENCE</h4>
+                {data.experience.map(exp => (
+                  <div key={exp.id} style={{ marginBottom: 15 }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontWeight: 800, fontSize: '12px', gap: 16 }}>
+                       <span style={{ flex: 1, lineHeight: 1.4 }}>{exp.company} — {exp.role}</span>
+                       <span style={{ textAlign: 'right', flexShrink: 0, maxWidth: '40%', lineHeight: 1.4 }}>{exp.period}</span>
+                     </div>
+                     <p style={{ fontSize: '11px', marginTop: 5, lineHeight: 1.5 }}>• {exp.desc}</p>
+                  </div>
+                ))}
+             </section>
+           )}
 
-           <section>
-              <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 12 }}>EDUCATION</h4>
-              {data.education.map(edu => (
-                <div key={edu.id} style={{ marginBottom: 10 }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '11px' }}><span>{edu.school}</span><span>{edu.year}</span></div>
-                   <p style={{ fontSize: '11px', marginTop: 2 }}>{edu.degree}</p>
-                </div>
-              ))}
-           </section>
+           {/* PROJECTS */}
+           {data.projects && data.projects.length > 0 && (
+             <section style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 14 }}>PROJECTS</h4>
+                {data.projects.map(p => (
+                  <div key={p.id} style={{ marginBottom: 15 }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontWeight: 800, fontSize: '12px', gap: 16 }}>
+                       <span style={{ flex: 1, lineHeight: 1.4 }}>{p.title}</span>
+                       <span style={{ textAlign: 'right', flexShrink: 0, maxWidth: '60%', lineHeight: 1.4 }}>{p.tech}</span>
+                     </div>
+                     <p style={{ fontSize: '11px', marginTop: 5, lineHeight: 1.5 }}>• {p.desc}</p>
+                  </div>
+                ))}
+             </section>
+           )}
+
+           {/* SKILLS */}
+           {data.skills && (
+             <section style={{ marginBottom: 20 }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 800, borderBottom: '1.5px solid #000', paddingBottom: 4, marginBottom: 12 }}>SKILLS</h4>
+                <p style={{ fontSize: '11px' }}>{data.skills}</p>
+             </section>
+           )}
+          </div>
         </div>
       </div>
-      </div>
     </div>
+  </div>
   );
 };
 

@@ -430,24 +430,35 @@ const Dashboard = ({ go, user, onAuth }) => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', paddingTop: 52, background: 'var(--s1)' }}>
       <aside className="sidebar-panel" style={{ width: 220, borderRight: '.5px solid var(--bl)', background: 'var(--s0)', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 4, position: 'sticky', top: 52, height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
-        <div style={{ padding: '4px 12px 20px', borderBottom: '.5px solid var(--bl)', marginBottom: 16 }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+        <div style={{ padding: '8px 12px 24px', borderBottom: '.5px solid var(--bl)', marginBottom: 20 }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
               <div 
-                style={{ width: 32, height: 32, borderRadius: 12, background: 'var(--near-black)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 12 }}
+                style={{ width: 38, height: 38, borderRadius: 14, background: 'linear-gradient(135deg, #1D1D1F 0%, #434347 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               >
                 {user.name[0]}
               </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 800, fontSize: '.85rem', cursor: 'pointer' }} onClick={() => setTab('settings')}>{user.name}</p>
-                <Badge type="dim">Pro Pilot</Badge>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 800, fontSize: '.9rem', cursor: 'pointer', letterSpacing: '-0.02em', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setTab('settings')}>{user.name}</p>
+                <span style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(90deg, #1b1b1c 0%, #3a3a3c 100%)', color: '#e5e5ea', fontSize: '0.65rem', fontWeight: 800, padding: '3px 8px', borderRadius: 100, letterSpacing: '0.04em', textTransform: 'uppercase', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>Pro Pilot</span>
               </div>
            </div>
         </div>
         {SIDE_NAV.map(n => (
           <div key={n.id} className={`slink ${tab === n.id ? 'active' : ''}`} onClick={() => { if (n.id === 'builder') go('livebuilder'); else if (n.id === 'portfolio') go('portfoliomaker'); else setTab(n.id); }}>
-            <Icon id={n.ic} size={15} color={tab === n.id ? 'var(--tp)' : 'var(--tt)'} />
-            <span style={{ fontSize: '.84rem', fontWeight: 600 }}>{n.l}</span>
-            {n.neu && <span style={{ marginLeft: 'auto', background: 'var(--ind)', color: 'white', fontSize: 8, padding: '2px 6px', borderRadius: 6, fontWeight: 900 }}>AI</span>}
+            <div style={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: tab === n.id ? 1 : 0.7 }}>
+              <Icon id={n.ic} size={15} color={tab === n.id ? 'var(--near-black)' : 'var(--ts)'} />
+            </div>
+            <span style={{ flex: 1, letterSpacing: '-0.01em', pointerEvents: 'none' }}>{n.l}</span>
+            {n.neu && (
+              <span style={{ 
+                background: tab === n.id ? 'linear-gradient(135deg, #5E5CE6 0%, #8E8DFA 100%)' : 'rgba(94,92,230,0.08)', 
+                color: tab === n.id ? 'white' : 'var(--ind)', 
+                fontSize: 9, padding: '2px 7px', borderRadius: 12, fontWeight: 800, boxShadow: tab === n.id ? '0 2px 8px rgba(94,92,230,0.25)' : 'none',
+                transition: 'all .2s'
+              }}>
+                AI
+              </span>
+            )}
           </div>
         ))}
         <div style={{ marginTop: 'auto', paddingTop: 20 }}>

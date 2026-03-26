@@ -242,9 +242,10 @@ body {
 }
 
 /* ─── SIDEBAR ─── */
-.slink { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; cursor: pointer; font-size: .83rem; font-weight: 500; color: var(--ts); transition: background .15s, color .15s; }
-.slink:hover  { background: var(--s1); color: var(--tp); }
-.slink.active { background: var(--s1); color: var(--tp); font-weight: 600; }
+.slink { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 2px; border-radius: 12px; cursor: pointer; font-size: .86rem; font-weight: 500; color: var(--ts); transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s, box-shadow .2s; border: 1px solid transparent; }
+.slink:hover  { background: rgba(0,0,0,0.03); color: var(--tp); transform: translateX(2px); }
+.slink.active { background: #fff; color: var(--near-black); font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.06); transform: translateX(2px); }
+.slink:active { transform: scale(0.98); }
 
 /* ─── BADGES ─── */
 .badge  { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; }
@@ -376,27 +377,9 @@ body {
   .plan-grid    { gap: 12px !important; }
 /* ─── PAGE GUIDES (A4) ─── */
 .a4-preview {
-  background-image: linear-gradient(to bottom, #fff 841px, #f0f0f2 841px, #f0f0f2 842px, #fff 842px);
-  background-size: 100% 842px;
   position: relative;
-}
-.a4-preview::after {
-  content: "Page Break / A4 Limit";
-  position: absolute;
-  top: 842px; left: 0; right: 0;
-  height: 20px;
-  background: var(--s1);
-  color: var(--ts);
-  font-size: 10px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0.6;
+  background: white !important;
+  /* Visual page breaks will be injected dynamically in React to repeat infinitely */
 }
 
   /* ── Modals ── */
