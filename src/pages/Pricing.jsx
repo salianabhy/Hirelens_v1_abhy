@@ -15,32 +15,32 @@ const Pricing = ({ go, onAuth }) => {
       cta: 'Get started free',
       action: () => go('upload'),
       features: [
-        { t: '1 resume scan / month',    on: true  },
-        { t: 'Overall match score',      on: true  },
-        { t: 'Basic issue list',         on: true  },
-        { t: 'Detailed breakdown',       on: false },
-        { t: 'Improvement suggestions',  on: false },
-        { t: 'ATS keyword analysis',     on: false },
+        { t: '1 resume scan / month', on: true },
+        { t: 'Overall match score', on: true },
+        { t: 'Basic issue list', on: true },
+        { t: 'Detailed breakdown', on: false },
+        { t: 'Improvement suggestions', on: false },
+        { t: 'ATS keyword analysis', on: false },
         { t: 'Interview prep questions', on: false },
       ],
     },
     {
       id: 'pro',
       name: 'Pro',
-      price: '₹149',
+      price: '₹0',
       period: '/month',
-      desc: 'Everything you need to land your next role.',
+      desc: 'Offer for Initial customers.',
       dark: true,
       cta: 'Upgrade to Pro',
       action: onAuth,
       features: [
-        { t: 'Unlimited resume scans',   on: true },
-        { t: 'Overall match score',      on: true },
-        { t: 'Full issue breakdown',     on: true },
-        { t: 'Improvement suggestions',  on: true },
-        { t: 'ATS keyword analysis',     on: true },
+        { t: 'Unlimited resume scans', on: true },
+        { t: 'Overall match score', on: true },
+        { t: 'Full issue breakdown', on: true },
+        { t: 'Improvement suggestions', on: true },
+        { t: 'ATS keyword analysis', on: true },
         { t: 'Interview prep questions', on: true },
-        { t: 'Priority support',         on: true },
+        { t: 'Priority support', on: true },
       ],
     },
   ];
@@ -81,10 +81,10 @@ const Pricing = ({ go, onAuth }) => {
               <div style={{ position: 'absolute', top: '-40%', left: '-20%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse,rgba(94,92,230,.1) 0%,transparent 70%)', pointerEvents: 'none' }} />
             )}
 
-            {/* Popular badge */}
+            {/* Offer badge */}
             {plan.dark && (
               <div style={{ position: 'absolute', top: 18, right: 18 }}>
-                <Badge type="white">Most Popular</Badge>
+                <Badge type="red">Special Offer!</Badge>
               </div>
             )}
 

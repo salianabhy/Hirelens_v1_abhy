@@ -11,9 +11,9 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
   useEffect(() => { setMenuOpen(false); }, [page]);
 
   const navLinks = [
-    ['landing',   'Product'],
     ['pricing',   'Pricing'],
     ['dashboard', 'Dashboard'],
+    ['contact',   'Contact Us'],
   ];
 
   return (

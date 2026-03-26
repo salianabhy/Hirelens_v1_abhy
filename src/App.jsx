@@ -11,6 +11,7 @@ import Pricing   from './pages/Pricing';
 import Dashboard from './pages/Dashboard';
 import ResumeBuilder from './pages/ResumeBuilder';
 import LiveBuilder from './pages/LiveBuilder';
+import Contact     from './pages/Contact';
 import Icon from './components/Icon';
 import Btn from './components/Btn';
 import Toast from './components/Toast';
@@ -125,6 +126,7 @@ const App = () => {
       upload: 'Analyze Your Resume | Hirelens',
       results: 'Your Resume Report | Hirelens',
       dashboard: 'Dashboard | Hirelens Career OS',
+      contact: 'Contact Us | Hirelens',
       livebuilder: 'Expert Resume Builder | Hirelens',
       pricing: 'Pricing & Plans | Hirelens',
     };
@@ -158,6 +160,7 @@ const App = () => {
     upload:    <Upload    go={go} user={user} onAuth={openAuth} setResults={setResults} onNotify={showToast} />,
     results:   <Results   go={go} user={user} onAuth={openAuth} data={results} />,
     pricing:   <Pricing   go={go} onAuth={openAuth} />,
+    contact:   <Contact   go={go} onNotify={showToast} />,
     dashboard: <Dashboard go={go} user={user} onAuth={openAuth} onNotify={showToast} />,
     resumebuilder: <ResumeBuilder go={go} user={user} />,
     livebuilder: <LiveBuilder go={go} user={user} onDataChange={setResumeData} onNotify={showToast} />,

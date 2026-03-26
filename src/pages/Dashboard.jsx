@@ -23,7 +23,6 @@ const SIDE_NAV = [
   { id: 'cover', l: 'Cover Letter', ic: 'file', neu: true },
   { id: 'interview', l: 'Interview Prep', ic: 'award', neu: true },
   { id: 'builder', l: 'Expert Builder', ic: 'zap', neu: true },
-  { id: 'settings', l: 'Settings', ic: 'settings' },
 ];
 
 const Dashboard = ({ go, user, onAuth }) => {
@@ -33,7 +32,7 @@ const Dashboard = ({ go, user, onAuth }) => {
   const [selectedScan, setSelectedScan] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [profileData, setProfileData] = useState({ name: user?.name || '', bio: user?.bio || 'Career Explorer' });
-  const [savingSettings, setSavingSettings] = useState(false);
+  // Settings functionality removed
   const [loadingAI, setLoadingAI] = useState(false);
   const [roastContent, setRoastContent] = useState(null);
 
@@ -342,63 +341,7 @@ const Dashboard = ({ go, user, onAuth }) => {
     if (tab === 'cover') return <div className="ru"> {renderSubHeader('Cover Letter')} <CoverLetter scans={scans} /> </div>;
     if (tab === 'interview') return <div className="ru"> {renderSubHeader('Interview Prep')} <InterviewPrep scans={scans} /> </div>;
 
-    if (tab === 'settings') {
-      return (
-        <div className="ru">
-          <div style={{ marginBottom: 32 }}>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-.04em', marginBottom: 8 }}>Settings</h1>
-            <p style={{ color: 'var(--ts)', fontSize: '.95rem' }}>Manage your profile and application preferences.</p>
-          </div>
-
-          <div className="card" style={{ padding: 32, maxWidth: 600 }}>
-            <div style={{ marginBottom: 24 }}>
-              <label className="rb-label">Full Name</label>
-              <input className="inp" value={profileData.name} onChange={e => setProfileData({ ...profileData, name: e.target.value })} />
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <label className="rb-label">Email Address</label>
-              <input className="inp" value={user.email} disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
-              <p style={{ fontSize: 11, color: 'var(--tt)', marginTop: 6 }}>Email cannot be changed for security reasons.</p>
-            </div>
-            <div style={{ marginBottom: 32 }}>
-              <label className="rb-label">Professional Bio</label>
-              <textarea className="inp" style={{ height: 80 }} value={profileData.bio} onChange={e => setProfileData({ ...profileData, bio: e.target.value })} />
-            </div>
-
-            <div className="div-light" style={{ margin: '0 0 32px' }} />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon id="brain" size={20} color="var(--ind)" />
-                </div>
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: '.9rem' }}>AI Co-pilot Features</p>
-                  <p style={{ fontSize: '.75rem', color: 'var(--ts)' }}>Personalized insights and smart scaling.</p>
-                </div>
-              </div>
-              <Badge type="green">Active</Badge>
-            </div>
-
-            <div style={{ marginTop: 40, display: 'flex', gap: 12 }}>
-              <Btn v="dark" sz="md" pill onClick={async () => {
-                setSavingSettings(true);
-                try {
-                  await updateDoc(doc(db, 'users', user.uid), { name: profileData.name, bio: profileData.bio });
-                  if (auth.currentUser) {
-                    await updateProfile(auth.currentUser, { displayName: profileData.name });
-                  }
-                  alert("Profile updated successfully!");
-                } catch (e) { console.error(e); }
-                setSavingSettings(false);
-              }} disabled={savingSettings}>
-                {savingSettings ? 'Saving...' : 'Save Changes'}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    // Settings tab removed
 
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--ts)' }}>Content mapping in progress...</div>;
   };
@@ -414,7 +357,7 @@ const Dashboard = ({ go, user, onAuth }) => {
               {user.name[0]}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 800, fontSize: '.9rem', cursor: 'pointer', letterSpacing: '-0.02em', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onClick={() => setTab('settings')}>{user.name}</p>
+              <p style={{ fontWeight: 800, fontSize: '.9rem', letterSpacing: '-0.02em', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</p>
               <span style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(90deg, #1b1b1c 0%, #3a3a3c 100%)', color: '#e5e5ea', fontSize: '0.65rem', fontWeight: 800, padding: '3px 8px', borderRadius: 100, letterSpacing: '0.04em', textTransform: 'uppercase', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>Pro Pilot</span>
             </div>
           </div>
