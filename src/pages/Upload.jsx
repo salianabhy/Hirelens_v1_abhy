@@ -2,11 +2,12 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import * as pdfjs from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import Icon from '../components/Icon';
-
-pdfjs.GlobalWorkerOptions.workerSrc = ''; // Handled dynamically in extractText
 import Btn from '../components/Btn';
 import { callGroq } from '../services/ai';
+
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const STEPS = [
   'Parsing document structure…',
@@ -15,7 +16,7 @@ const STEPS = [
   'Generating score report…',
 ];
 
-const Upload = ({ go, user, onAuth, setResults }) => {
+const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
   const [file,     setFile]     = useState(null);
   const [dragging, setDragging] = useState(false);
   const [loading,  setLoading]  = useState(false);
@@ -40,11 +41,6 @@ const Upload = ({ go, user, onAuth, setResults }) => {
   const extractText = async (file) => {
     if (file.type !== 'application/pdf') return ""; 
     try {
-      // Setup worker if not already set or if it failed
-      if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-      }
-
       const arrayBuffer = await file.arrayBuffer();
       const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
@@ -91,7 +87,7 @@ const Upload = ({ go, user, onAuth, setResults }) => {
       }
     `;
     try {
-      const completion = await callGroq(prompt);
+      const completion = await callGroq(prompt, { json: true });
       let textContent = completion.choices[0]?.message?.content || "{}";
       textContent = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
       
@@ -160,6 +156,11 @@ const Upload = ({ go, user, onAuth, setResults }) => {
       } catch (err) {
         console.error("Analysis background process failed:", err);
         setApiError(err.message);
+        if (ivRef.current) {
+          clearInterval(ivRef.current);
+          ivRef.current = null;
+        }
+        setLoading(false);
         return false;
       }
     })();
@@ -177,8 +178,6 @@ const Upload = ({ go, user, onAuth, setResults }) => {
           if (success) {
             if (onNotify) onNotify("Resume analyzed and saved to dashboard!");
             setTimeout(() => go('dashboard'), 500);
-          } else {
-            setLoading(false);
           }
         });
       }
