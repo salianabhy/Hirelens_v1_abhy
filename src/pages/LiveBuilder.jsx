@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { callGroq } from '../services/ai';
+import { callGroq, cleanJsonResponse } from '../services/ai';
 import Icon from '../components/Icon';
 import Btn from '../components/Btn';
 import Badge from '../components/Badge';
@@ -77,17 +77,11 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
         
         Return ONLY valid JSON.`;
 
-        const completion = await callGroq(prompt);
-
+        const completion = await callGroq(prompt, { json: true });
 
         let parsed;
-        try {
-          let textContent = completion.choices[0]?.message?.content || "{}";
-          textContent = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
-          parsed = JSON.parse(textContent);
-        } catch(e) {
-          parsed = blankGen;
-        }
+        const textContent = completion.choices[0]?.message?.content || "{}";
+        parsed = cleanJsonResponse(textContent) || blankGen;
         
         setData({
           name: parsed.name || '',

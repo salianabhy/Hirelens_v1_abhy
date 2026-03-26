@@ -2,31 +2,61 @@ import Groq from 'groq-sdk';
 
 /**
  * 🔒 SECURITY NOTICE: 
- * For 10,000+ users, this service should be moved to a Firebase Cloud Function.
- * This prevents your Groq API key from being exposed in the browser.
+ * For production (10,000+ users), this entire service will be replaced by 
+ * a fetch call to a Firebase Cloud Function. This keeps your API key 
+ * completely hidden from the client-side bundle.
  */
 
 const getGroqClient = () => {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-  if (!apiKey) throw new Error("Missing Groq API Key");
+  if (!apiKey) throw new Error("Missing Groq API Key in .env.local");
   return new Groq({ apiKey, dangerouslyAllowBrowser: true });
 };
 
-export const callGroq = async (prompt, attempt = 0) => {
-  const groq = getGroqClient();
+/**
+ * Centralized AI Call Logic
+ * Includes exponential backoff for rate limiting and robust JSON cleaning.
+ */
+export const callGroq = async (messages, options = {}, attempt = 0) => {
   try {
+    const groq = getGroqClient();
+    
+    // Support both string prompts and message arrays
+    const formattedMessages = typeof messages === 'string' 
+      ? [{ role: "user", content: messages }]
+      : messages;
+
     const completion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "llama-3.1-8b-instant",
-      response_format: { type: "json_object" }
+      messages: formattedMessages,
+      model: options.model || "llama-3.1-8b-instant",
+      response_format: options.json ? { type: "json_object" } : undefined,
+      temperature: options.temperature ?? 0.7,
     });
+
     return completion;
   } catch (err) {
+    // 429 = Rate Limit. Apply Exponential Backoff (1s, 2s, 4s)
     if (err.status === 429 && attempt < 3) {
       const wait = Math.pow(2, attempt) * 1000;
       await new Promise(r => setTimeout(r, wait));
-      return callGroq(prompt, attempt + 1);
+      return callGroq(messages, options, attempt + 1);
     }
-    throw err;
+    
+    console.error("Groq Service Error:", err);
+    throw new Error(err.message || "AI Service Unavailable");
+  }
+};
+
+/**
+ * Helper to clean AI responses that might contain markdown backticks
+ */
+export const cleanJsonResponse = (text) => {
+  if (!text) return null;
+  const clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error("JSON Parse Error:", text);
+    return null;
   }
 };

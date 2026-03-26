@@ -212,9 +212,6 @@ const Results = ({ go, user, onAuth, data }) => {
             <Btn v="white" sz="lg" pill onClick={() => go('pricing')}>
               Unlock full report <Icon id="arrow" size={14} />
             </Btn>
-            <Btn v="ghost" sz="sm" pill onClick={() => go('portfoliomaker')} style={{ color: 'var(--tw)', opacity: 0.8 }}>
-              Build Personal Portfolio <Icon id="globe" size={14} color="white" />
-            </Btn>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,.24)', fontWeight: 500 }}>₹149 / month · cancel anytime</span>
           </div>
         </div>
@@ -223,7 +220,7 @@ const Results = ({ go, user, onAuth, data }) => {
         <div className="ru d10" style={{ marginTop: 24, padding: '32px', background: 'var(--near-black)', borderRadius: 24, textAlign: 'center', color: 'white', position: 'relative' }}>
           <h3 style={{ fontSize: '1.45rem', fontWeight: 800, marginBottom: 8, letterSpacing: '-.03em' }}>Ready for the Next Level?</h3>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '.9rem', marginBottom: 24, maxWidth: 440, margin: '0 auto 24px' }}>
-            We've saved your analysis! Visit your dashboard to access the AI Career Coach, Cover Letter Generator, and real-time Salary Benchmarks.
+            We've saved your analysis! Visit your dashboard to access the AI Career Coach and Cover Letter Generator.
           </p>
           <Btn v="white" sz="lg" pill onClick={() => go('dashboard')}>
             View Full Dashboard <Icon id="arrow" size={14} color="var(--near-black)" />

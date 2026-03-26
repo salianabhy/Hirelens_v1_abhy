@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import Groq from 'groq-sdk';
+import { callGroq } from '../services/ai';
 import Icon from './Icon';
 import Btn from './Btn';
 
@@ -32,15 +32,11 @@ const AICoach = ({ scans = [] }) => {
     setInput('');
     setLoading(true);
 
+    const latestContext = scans.length > 0 
+      ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues)}. Improvements: ${JSON.stringify(scans[0].improvements)}. RAW RESUME TEXT: """${scans[0].text}"""`
+      : `No resume uploaded yet.`;
+
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY");
-      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-
-      const latestContext = scans.length > 0 
-        ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues)}. Improvements: ${JSON.stringify(scans[0].improvements)}. RAW RESUME TEXT: """${scans[0].text}"""`
-        : `No resume uploaded yet.`;
-
       const sysMsg = { 
         role: "system", 
         content: `You are a world-class AI Career Coach. You help users improve their resume. 
@@ -53,10 +49,7 @@ const AICoach = ({ scans = [] }) => {
          ...newHistory.map(m => ({ role: m.role, content: m.text }))
       ];
 
-      const completion = await groq.chat.completions.create({
-        messages: groqMsgs,
-        model: "llama-3.1-8b-instant"
-      });
+      const completion = await callGroq(groqMsgs);
 
       const responseText = completion.choices[0]?.message?.content || "I couldn't process that.";
       setMessages(prev => [...prev, { role: 'assistant', text: responseText }]);

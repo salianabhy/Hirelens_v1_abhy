@@ -42,6 +42,34 @@
   --rp: 100px;
 }
 
+[data-theme='dark'] {
+  --black:      #FFFFFF;
+  --near-black: #F5F5F7;
+  --ink:        #E8E8ED;
+
+  /* Surfaces */
+  --s0: #161617;
+  --s1: #000000;
+  --s2: #1D1D1F;
+  --s3: #2C2C2E;
+
+  /* Text */
+  --tp:  #F5F5F7;
+  --ts:  #86868B;
+  --tt:  #424245;
+  --tw:  #000000;
+  --td:  rgba(0,0,0,.55);
+
+  /* Borders */
+  --bl:  rgba(255,255,255,.12);
+  --bm:  rgba(255,255,255,.24);
+  --bd:  rgba(0,0,0,.2);
+  --bg:  rgba(0,0,0,.3);
+  
+  /* Semi-transparent overrides */
+  --glass-bg: rgba(22, 22, 23, 0.72);
+}
+
 /* ─── BASE ─── */
 html {
   scroll-behavior: smooth;

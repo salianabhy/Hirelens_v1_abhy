@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Groq from 'groq-sdk';
+import { callGroq, cleanJsonResponse } from '../services/ai';
 import Icon from './Icon';
 import Btn from './Btn';
 import Badge from './Badge';
@@ -31,9 +31,6 @@ Requirements:
     setLoading(true);
     
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-      if (!apiKey) throw new Error("Missing VITE_GROQ_API_KEY in .env.local");
-      const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true });
       
       const prompt = `
         You are an expert technical recruiter matching a resume to a job description.
@@ -58,15 +55,10 @@ Requirements:
         Return ONLY valid JSON.
       `;
 
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model: "llama-3.1-8b-instant",
-        response_format: { type: "json_object" }
-      });
-
+      const completion = await callGroq(prompt, { json: true });
       const textContent = completion.choices[0]?.message?.content || "{}";
-      const cleanJson = textContent.replace(/```json/gi, '').replace(/```/g, '').trim();
-      setResult(JSON.parse(cleanJson));
+      const resultData = cleanJsonResponse(textContent);
+      setResult(resultData || {});
     } catch (err) {
       console.error(err);
       alert("Failed to connect to AI match engine: " + err.message);

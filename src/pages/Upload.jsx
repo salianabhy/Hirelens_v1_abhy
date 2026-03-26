@@ -78,7 +78,10 @@ const Upload = ({ go, user, onAuth, setResults }) => {
           "tech_keywords": ["React", "Python"],
           "metrics": ["Increased by 20%"]
         },
-        "issues": ["No specific career goals stated", "A project lacks metrics"],
+        "issues": [
+          { "label": "Missing Metrics", "desc": "Quantify your achievements with numbers or percentages.", "sev": "Critical" },
+          { "label": "Vague Summary", "desc": "Refine your profile summary to align with the target role.", "sev": "Medium" }
+        ],
         "improvements": ["Add more metrics to impact descriptions", "Use stronger action verbs"]
       }
     `;

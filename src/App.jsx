@@ -11,7 +11,6 @@ import Pricing   from './pages/Pricing';
 import Dashboard from './pages/Dashboard';
 import ResumeBuilder from './pages/ResumeBuilder';
 import LiveBuilder from './pages/LiveBuilder';
-import PortfolioMaker from './pages/PortfolioMaker';
 import Icon from './components/Icon';
 import Btn from './components/Btn';
 
@@ -123,7 +122,6 @@ const App = () => {
       results: 'Your Resume Report | Hirelens',
       dashboard: 'Dashboard | Hirelens Career OS',
       livebuilder: 'Expert Resume Builder | Hirelens',
-      portfoliomaker: 'Portfolio Site Generator | Hirelens',
       pricing: 'Pricing & Plans | Hirelens',
     };
     document.title = titles[page] || 'Hirelens';
@@ -159,7 +157,6 @@ const App = () => {
     dashboard: <Dashboard go={go} user={user} onAuth={openAuth} />,
     resumebuilder: <ResumeBuilder go={go} user={user} />,
     livebuilder: <LiveBuilder go={go} user={user} onDataChange={setResumeData} />,
-    portfoliomaker: <PortfolioMaker go={go} user={user} data={resumeData} />,
   };
 
   const LogoutModal = () => (
