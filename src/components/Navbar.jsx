@@ -11,32 +11,32 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
   useEffect(() => { setMenuOpen(false); }, [page]);
 
   const navLinks = [
-    ['pricing',   'Pricing'],
+    ['pricing', 'Pricing'],
     ['dashboard', 'Dashboard'],
-    ['contact',   'Contact Us'],
+    ['contact', 'Contact Us'],
   ];
 
   return (
     <>
       <nav className={`nav-shell ${dark ? 'dark-nav' : ''}`}>
-        <div style={{ maxWidth:1120, margin:'0 auto', height:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}>
+        <div style={{ maxWidth: 1120, margin: '0 auto', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' }}>
 
           {/* Left — Logo + desktop nav */}
-          <div style={{ display:'flex', alignItems:'center', gap:28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
             <div
-              style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
               onClick={() => go('landing')}
             >
               <div style={{ width:24, height:24, borderRadius:6, background: dark ? 'var(--tw)' : 'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Icon id="logo" size={13} color={dark ? 'var(--near-black)' : 'white'} />
               </div>
-              <span style={{ fontWeight:700, fontSize:'.93rem', letterSpacing:'-.03em', color: dark ? 'var(--tw)' : 'var(--tp)' }}>
+              <span style={{ fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-.03em', color: dark ? 'var(--tw)' : 'var(--tp)' }}>
                 HireLens
               </span>
             </div>
 
             {/* Desktop nav links */}
-            <div className="hide-tablet" style={{ display:'flex', gap:2 }}>
+            <div className="hide-tablet" style={{ display: 'flex', gap: 2 }}>
               {navLinks.map(([p, l]) => (
                 <button
                   key={p}
@@ -50,18 +50,18 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
           </div>
 
           {/* Right — Auth / User + Hamburger */}
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {user ? (
-              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                  <div style={{ width:28, height:28, borderRadius:'50%', background: dark ? 'rgba(255,255,255,.15)' : 'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:700, fontSize:11 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: dark ? 'rgba(255,255,255,.15)' : 'var(--near-black)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 11 }}>
                     {user.name[0]}
                   </div>
-                  <span className="hide-mobile" style={{ fontSize:'.84rem', fontWeight:600, color: dark ? 'var(--tw)' : 'var(--tp)' }}>
+                  <span className="hide-mobile" style={{ fontSize: '.84rem', fontWeight: 600, color: dark ? 'var(--tw)' : 'var(--tp)' }}>
                     {user.name}
                   </span>
                 </div>
-                <button 
+                <button
                   onClick={onLogout}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform .15s' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
@@ -90,7 +90,7 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
             {/* Hamburger — shown on tablet/mobile via CSS */}
             <button
               className="hide-desktop"
-              style={{ display:'none', background:'none', border:'none', cursor:'pointer', color: dark ? 'var(--tw)' : 'var(--tp)', padding:6, borderRadius:8 }}
+              style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: dark ? 'var(--tw)' : 'var(--tp)', padding: 6, borderRadius: 8 }}
               onClick={() => setMenuOpen(o => !o)}
               aria-label="Toggle menu"
             >
@@ -112,7 +112,7 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
               <button
                 key={p}
                 onClick={() => { go(p); setMenuOpen(false); }}
-                style={{ display:'block', width:'100%', textAlign:'left', padding:'12px 14px', background: page===p ? 'var(--s1)' : 'transparent', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:600, fontSize:'.95rem', color: dark ? (page===p ? 'var(--tp)' : 'var(--tw)') : 'var(--tp)', borderRadius:11, marginBottom:4, transition:'background .15s' }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 14px', background: page === p ? 'var(--s1)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '.95rem', color: dark ? (page === p ? 'var(--tp)' : 'var(--tw)') : 'var(--tp)', borderRadius: 11, marginBottom: 4, transition: 'background .15s' }}
               >
                 {l}
               </button>
@@ -120,14 +120,14 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
             {user ? (
               <button
                 onClick={() => { onLogout(); setMenuOpen(false); }}
-                style={{ display:'flex', alignItems: 'center', gap: 10, width:'100%', textAlign:'left', padding:'12px 14px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, fontSize:'.95rem', color: 'var(--red)', borderRadius:11, transition:'background .15s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, fontSize: '.95rem', color: 'var(--red)', borderRadius: 11, transition: 'background .15s' }}
               >
                 <Icon id="logout" size={17} color="var(--red)" /> Sign out
               </button>
             ) : (
               <button
                 onClick={() => { onAuth(); setMenuOpen(false); }}
-                style={{ display:'block', width:'100%', textAlign:'left', padding:'12px 14px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, fontSize:'.95rem', color: dark ? 'rgba(255,255,255,.55)' : 'var(--ts)', borderRadius:11, transition:'background .15s' }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, fontSize: '.95rem', color: dark ? 'rgba(255,255,255,.55)' : 'var(--ts)', borderRadius: 11, transition: 'background .15s' }}
               >
                 Sign in
               </button>
