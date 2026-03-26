@@ -16,6 +16,9 @@ const STEPS = [
   'Generating score report…',
 ];
 
+// Custom ML backend — runs alongside the frontend (npm run dev + ./backend/start.sh)
+const ML_BACKEND = 'http://localhost:8000';
+
 const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
   const [file,     setFile]     = useState(null);
   const [dragging, setDragging] = useState(false);
@@ -58,8 +61,6 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
       return ""; // Proceed with empty text if parsing fails
     }
   };
-
-  const ML_BACKEND = 'http://localhost:8000';
 
   const generateAIAssessment = async (text, fileName, targetRole) => {
     const truncatedText = text?.substring(0, 10000) || '';

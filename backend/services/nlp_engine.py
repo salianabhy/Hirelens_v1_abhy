@@ -1,3 +1,7 @@
+import warnings
+warnings.filterwarnings("ignore", message=".*LibreSSL.*")
+warnings.filterwarnings("ignore", message=".*NotOpenSSLWarning.*")
+
 import pickle
 import os
 import re
