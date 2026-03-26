@@ -121,17 +121,34 @@ const Upload = ({ go, user, onAuth, setResults }) => {
 
     const role = roleRef.current?.value || '';
 
+    const sanitizeForFirebase = (obj) => {
+      const sanitized = JSON.parse(JSON.stringify(obj));
+      const walk = (item) => {
+        if (Array.isArray(item)) {
+          return item.map(i => walk(i)).flat().filter(i => i !== undefined);
+        }
+        if (item !== null && typeof item === 'object') {
+          Object.keys(item).forEach(k => {
+            item[k] = walk(item[k]);
+          });
+        }
+        return item;
+      };
+      return walk(sanitized);
+    };
+
     // ── Pre-fetch / Background Work ──
     const processPromise = (async () => {
       try {
         const text = await extractText(file);
         const analysis = await generateAIAssessment(text, file.name || 'Resume', role);
-        setResults(analysis);
+        const cleanAnalysis = sanitizeForFirebase(analysis);
+        setResults(cleanAnalysis);
 
         if (user?.uid) {
           const safeName = (file.name || 'document').replace(/[^a-zA-Z0-9]/g, '_');
           await setDoc(doc(db, 'users', user.uid, 'scans', safeName), {
-            ...analysis,
+            ...cleanAnalysis,
           });
         }
         return true;
@@ -152,7 +169,8 @@ const Upload = ({ go, user, onAuth, setResults }) => {
         clearInterval(iv);
         processPromise.then((success) => {
           if (success) {
-            setTimeout(() => go('results'), 500);
+            if (onNotify) onNotify("Resume analyzed and saved to dashboard!");
+            setTimeout(() => go('dashboard'), 500);
           } else {
             setLoading(false);
           }

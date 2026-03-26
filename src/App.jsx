@@ -13,6 +13,7 @@ import ResumeBuilder from './pages/ResumeBuilder';
 import LiveBuilder from './pages/LiveBuilder';
 import Icon from './components/Icon';
 import Btn from './components/Btn';
+import Toast from './components/Toast';
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
@@ -52,6 +53,9 @@ const DEFAULT_RESUME = {
 };
 
 const App = () => {
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => setToast({ msg, type });
+
   const [page, setPage] = useState(() => localStorage.getItem('hirelens_page') || 'landing');
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
@@ -151,12 +155,12 @@ const App = () => {
 
   const screens = {
     landing:   <Landing   go={go} onAuth={openAuth} />,
-    upload:    <Upload    go={go} user={user} onAuth={openAuth} setResults={setResults} />,
+    upload:    <Upload    go={go} user={user} onAuth={openAuth} setResults={setResults} onNotify={showToast} />,
     results:   <Results   go={go} user={user} onAuth={openAuth} data={results} />,
     pricing:   <Pricing   go={go} onAuth={openAuth} />,
-    dashboard: <Dashboard go={go} user={user} onAuth={openAuth} />,
+    dashboard: <Dashboard go={go} user={user} onAuth={openAuth} onNotify={showToast} />,
     resumebuilder: <ResumeBuilder go={go} user={user} />,
-    livebuilder: <LiveBuilder go={go} user={user} onDataChange={setResumeData} />,
+    livebuilder: <LiveBuilder go={go} user={user} onDataChange={setResumeData} onNotify={showToast} />,
   };
 
   const LogoutModal = () => (
@@ -187,6 +191,7 @@ const App = () => {
         />
       )}
       {showLogout && <LogoutModal />}
+      {toast && <Toast message={toast.msg} type={toast.type} onClear={() => setToast(null)} />}
     </ErrorBoundary>
   );
 };

@@ -323,10 +323,24 @@ const Dashboard = ({ go, user, onAuth }) => {
     }
 
 
-    if (tab === 'matcher') return <JobMatcher resumeText={latest?.extractedText || latest?.text || latest?.name || ""} />;
-    if (tab === 'coach') return <AICoach scans={scans} />;
-    if (tab === 'cover') return <CoverLetter scans={scans} />;
-    if (tab === 'interview') return <InterviewPrep scans={scans} />;
+    const renderSubHeader = (title) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button 
+          onClick={() => setTab('overview')}
+          style={{ width: 36, height: 36, borderRadius: 12, background: 'var(--s0)', border: '.5px solid var(--bl)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .2s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--s1)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--s0)'}
+        >
+          <Icon id="arrow" size={14} style={{ transform: 'rotate(180deg)' }} color="var(--ts)" />
+        </button>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-.03em' }}>{title}</h2>
+      </div>
+    );
+
+    if (tab === 'matcher') return <div className="ru"> {renderSubHeader('Job Matcher')} <JobMatcher resumeText={latest?.extractedText || latest?.text || latest?.name || ""} /> </div>;
+    if (tab === 'coach') return <div className="ru"> {renderSubHeader('AI Career Coach')} <AICoach scans={scans} /> </div>;
+    if (tab === 'cover') return <div className="ru"> {renderSubHeader('Cover Letter')} <CoverLetter scans={scans} /> </div>;
+    if (tab === 'interview') return <div className="ru"> {renderSubHeader('Interview Prep')} <InterviewPrep scans={scans} /> </div>;
 
     if (tab === 'settings') {
       return (
