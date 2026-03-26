@@ -519,7 +519,7 @@ const ResumeBuilder = ({ go, user }) => {
               <div className="rb-form-row">
                 <div className="rb-form-group">
                   <label className="rb-label">Project Title</label>
-                  <input className="inp" value={pj.title} onChange={e => updateItem('projects', i, 'title', e.target.value)} placeholder="e.g. HireLens AI" />
+                  <input className="inp" value={pj.title} onChange={e => updateItem('projects', i, 'title', e.target.value)} placeholder="e.g. Resumeit AI" />
                 </div>
                 <div className="rb-form-group">
                   <label className="rb-label">Tech Stack</label>

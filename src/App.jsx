@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component {
             </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 12 }}>Something went wrong</h2>
             <p style={{ color: 'var(--ts)', fontSize: '.9rem', marginBottom: 24 }}>The app encountered an unexpected error. This usually happens during high traffic.</p>
-            <Btn v="dark" pill onClick={() => window.location.reload()}>Reload Hirelens</Btn>
+            <Btn v="dark" pill onClick={() => window.location.reload()}>Reload Resumeit</Btn>
           </div>
         </div>
       );
@@ -122,15 +122,15 @@ const App = () => {
 
   useEffect(() => {
     const titles = {
-      landing: 'Hirelens | AI-powered Resume Intelligence',
-      upload: 'Analyze Your Resume | Hirelens',
-      results: 'Your Resume Report | Hirelens',
-      dashboard: 'Dashboard | Hirelens Career OS',
-      contact: 'Contact Us | Hirelens',
-      livebuilder: 'Expert Resume Builder | Hirelens',
-      pricing: 'Pricing & Plans | Hirelens',
+      landing: 'Resumeit | AI-powered Resume Intelligence',
+      upload: 'Analyze Your Resume | Resumeit',
+      results: 'Your Resume Report | Resumeit',
+      dashboard: 'Dashboard | Resumeit Career OS',
+      contact: 'Contact Us | Resumeit',
+      livebuilder: 'Expert Resume Builder | Resumeit',
+      pricing: 'Pricing & Plans | Resumeit',
     };
-    document.title = titles[page] || 'Hirelens';
+    document.title = titles[page] || 'Resumeit';
   }, [page]);
 
   useEffect(() => {
@@ -174,7 +174,7 @@ const App = () => {
             <Icon id="award" size={24} color="var(--ts)" />
          </div>
          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 10, letterSpacing: '-.03em' }}>Ready to exit?</h2>
-         <p style={{ color: 'var(--ts)', fontSize: '.9rem', lineHeight: 1.6, marginBottom: 32 }}>You will be signed out of your Hirelens session. All your scans are safe.</p>
+         <p style={{ color: 'var(--ts)', fontSize: '.9rem', lineHeight: 1.6, marginBottom: 32 }}>You will be signed out of your Resumeit session. All your scans are safe.</p>
          <div style={{ display: 'flex', gap: 12 }}>
             <Btn v="ghost" full sz="lg" pill onClick={() => setShowLogout(false)}>Cancel</Btn>
             <Btn v="dark" full sz="lg" pill onClick={() => handleLogout()}>Sign Out</Btn>

@@ -31,7 +31,7 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
                 <Icon id="logo" size={13} color={dark ? 'var(--near-black)' : 'white'} />
               </div>
               <span style={{ fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-.03em', color: dark ? 'var(--tw)' : 'var(--tp)' }}>
-                HireLens
+                Resumeit
               </span>
             </div>
 

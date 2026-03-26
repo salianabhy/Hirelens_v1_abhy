@@ -87,7 +87,7 @@ const AuthModal = ({ onClose, onLogin }) => {
             <div style={{ width:28, height:28, borderRadius:8, background:'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <Icon id="logo" size={14} color="white" />
             </div>
-            <span style={{ fontWeight:700, fontSize:'.95rem', letterSpacing:'-.03em' }}>HireLens</span>
+            <span style={{ fontWeight:700, fontSize:'.95rem', letterSpacing:'-.03em' }}>Resumeit</span>
           </div>
           <button
             onClick={onClose}
@@ -188,7 +188,7 @@ const AuthModal = ({ onClose, onLogin }) => {
         />
 
         <Btn v="dark" sz="lg" full loading={loading} onClick={submit}>
-          {tab === 'signin' ? 'Sign in to HireLens' : 'Create free account'}
+          {tab === 'signin' ? 'Sign in to Resumeit' : 'Create free account'}
         </Btn>
 
         <p style={{ fontSize:10, color:'var(--tt)', textAlign:'center', marginTop:16, lineHeight:1.65 }}>

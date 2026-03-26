@@ -41,7 +41,7 @@ const Landing = ({ go, onAuth }) => {
             </h1>
 
             <p className="ru d2 hero-sub" style={{ fontSize: 'clamp(.95rem,1.4vw,1.15rem)', color: 'var(--td)', maxWidth: 460, marginBottom: 36, lineHeight: 1.7, fontWeight: 400 }}>
-              HireLens scores your resume against real hiring signals — ATS compatibility, keyword density, and recruiter benchmarks — in seconds.
+              Resumeit scores your resume against real hiring signals — ATS compatibility, keyword density, and recruiter benchmarks — in seconds.
             </p>
 
             <div className="ru d3 cta-group" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 56 }}>
@@ -140,7 +140,7 @@ const Landing = ({ go, onAuth }) => {
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 28px 80px' }}>
         <div className="card" style={{ padding: '28px 30px' }}>
           <p style={{ fontSize: 'clamp(.95rem,1.5vw,1.1rem)', lineHeight: 1.7, color: 'var(--tp)', fontStyle: 'italic', marginBottom: 18, fontFamily: "'Instrument Serif',serif" }}>
-            "HireLens identified exactly why I wasn't getting callbacks. After fixing the 3 critical issues, I had 4 interviews in the same week."
+            "Resumeit identified exactly why I wasn't getting callbacks. After fixing the 3 critical issues, I had 4 interviews in the same week."
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--s2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>P</div>
