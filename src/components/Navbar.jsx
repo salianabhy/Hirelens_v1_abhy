@@ -24,14 +24,15 @@ const Navbar = ({ page, go, user, onAuth, onLogout }) => {
           {/* Left — Logo + desktop nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
             <div
-              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
               onClick={() => go('landing')}
+              className="haptic-click"
             >
-              <div style={{ width:24, height:24, borderRadius:6, background: dark ? 'var(--tw)' : 'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Icon id="logo" size={13} color={dark ? 'var(--near-black)' : 'white'} />
+              <div style={{ width:28, height:28, borderRadius:8, background: dark ? '#fff' : 'var(--near-black)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: dark ? '0 0 15px rgba(255,255,255,0.3)' : 'none' }}>
+                <Icon id="logo" size={15} color={dark ? 'var(--near-black)' : 'white'} />
               </div>
-              <span style={{ fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-.03em', color: dark ? 'var(--tw)' : 'var(--tp)' }}>
-                Resumeit
+              <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-.05em', color: dark ? '#fff' : 'var(--tp)' }}>
+                Resumeeit<span style={{ color: 'var(--ind)' }}>.</span>
               </span>
             </div>
 

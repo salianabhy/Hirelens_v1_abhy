@@ -3,6 +3,7 @@ import Groq from 'groq-sdk';
 import Icon from './Icon';
 import Btn from './Btn';
 import Badge from './Badge';
+import FormattedText from './FormattedText';
 
 const CoverLetter = ({ scans }) => {
   const [jd, setJd] = useState('');
@@ -133,8 +134,8 @@ Important: Write in first person. Do NOT include placeholders like [Your Name] -
               </Btn>
             </div>
           </div>
-          <div style={{ whiteSpace: 'pre-wrap', fontSize: '.88rem', lineHeight: 1.8, color: 'var(--tp)', fontFamily: "'Georgia', serif", padding: '20px 24px', background: 'var(--s1)', borderRadius: 16, borderLeft: '3px solid var(--ind)' }}>
-            {letter}
+          <div style={{ fontSize: '.88rem', lineHeight: 1.8, color: 'var(--tp)', fontFamily: "'Georgia', serif", padding: '20px 24px', background: 'var(--s1)', borderRadius: 16, borderLeft: '3px solid var(--ind)' }}>
+            <FormattedText text={letter} />
           </div>
           <p style={{ fontSize: '.75rem', color: 'var(--tt)', marginTop: 16, textAlign: 'center' }}>
             💡 Review and personalize before sending — AI-drafted letters work best with a human touch.

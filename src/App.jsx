@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component {
             </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 12 }}>Something went wrong</h2>
             <p style={{ color: 'var(--ts)', fontSize: '.9rem', marginBottom: 24 }}>The app encountered an unexpected error. This usually happens during high traffic.</p>
-            <Btn v="dark" pill onClick={() => window.location.reload()}>Reload Resumeit</Btn>
+            <Btn v="dark" pill onClick={() => window.location.reload()}>Reload Resumeeit</Btn>
           </div>
         </div>
       );
@@ -57,36 +57,48 @@ const App = () => {
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = 'success') => setToast({ msg, type });
 
-  const [page, setPage] = useState(() => localStorage.getItem('hirelens_page') || 'landing');
+  const [page, setPage] = useState(() => localStorage.getItem('resumeeit_page') || 'landing');
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [results, setResultsState] = useState(() => {
-    const cached = localStorage.getItem('hirelens_results');
-    return cached ? JSON.parse(cached) : null;
+    try {
+      const cached = localStorage.getItem('resumeeit_results');
+      return cached ? JSON.parse(cached) : null;
+    } catch(e) { 
+      console.warn("Cleared corrupted results cache");
+      localStorage.removeItem('resumeeit_results');
+      return null;
+    }
   });
   // Shared structured resume state — LiveBuilder writes, PortfolioMaker reads
   const [resumeData, setResumeDataState] = useState(() => {
-    const cached = localStorage.getItem('hirelens_resumeData');
-    return cached ? JSON.parse(cached) : DEFAULT_RESUME;
+    try {
+      const cached = localStorage.getItem('resumeeit_resumeData');
+      return (cached && cached !== "undefined") ? JSON.parse(cached) : DEFAULT_RESUME;
+    } catch(e) {
+      console.warn("Cleared corrupted resumeData cache");
+      localStorage.removeItem('resumeeit_resumeData');
+      return DEFAULT_RESUME;
+    }
   });
   const [showLogout, setShowLogout] = useState(false);
 
   const go = p => {
     setPage(p);
-    localStorage.setItem('hirelens_page', p);
+    localStorage.setItem('resumeeit_page', p);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const setResults = (data) => {
     setResultsState(data);
-    if (data) localStorage.setItem('hirelens_results', JSON.stringify(data));
-    else localStorage.removeItem('hirelens_results');
+    if (data) localStorage.setItem('resumeeit_results', JSON.stringify(data));
+    else localStorage.removeItem('resumeeit_results');
   };
 
   const setResumeData = (data) => {
     setResumeDataState(data);
-    if (data) localStorage.setItem('hirelens_resumeData', JSON.stringify(data));
-    else localStorage.removeItem('hirelens_resumeData');
+    if (data) localStorage.setItem('resumeeit_resumeData', JSON.stringify(data));
+    else localStorage.removeItem('resumeeit_resumeData');
   };
 
   const login = u => {
@@ -122,15 +134,15 @@ const App = () => {
 
   useEffect(() => {
     const titles = {
-      landing: 'Resumeit | AI-powered Resume Intelligence',
-      upload: 'Analyze Your Resume | Resumeit',
-      results: 'Your Resume Report | Resumeit',
-      dashboard: 'Dashboard | Resumeit Career OS',
-      contact: 'Contact Us | Resumeit',
-      livebuilder: 'Expert Resume Builder | Resumeit',
-      pricing: 'Pricing & Plans | Resumeit',
+      landing: 'Resumeeit | AI-powered Resume Intelligence',
+      upload: 'Analyze Your Resume | Resumeeit',
+      results: 'Your Resume Report | Resumeeit',
+      dashboard: 'Dashboard | Resumeeit Career OS',
+      contact: 'Contact Us | Resumeeit',
+      livebuilder: 'Expert Resume Builder | Resumeeit',
+      pricing: 'Pricing & Plans | Resumeeit',
     };
-    document.title = titles[page] || 'Resumeit';
+    document.title = titles[page] || 'Resumeeit';
   }, [page]);
 
   useEffect(() => {
@@ -174,7 +186,7 @@ const App = () => {
             <Icon id="award" size={24} color="var(--ts)" />
          </div>
          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 10, letterSpacing: '-.03em' }}>Ready to exit?</h2>
-         <p style={{ color: 'var(--ts)', fontSize: '.9rem', lineHeight: 1.6, marginBottom: 32 }}>You will be signed out of your Resumeit session. All your scans are safe.</p>
+         <p style={{ color: 'var(--ts)', fontSize: '.9rem', lineHeight: 1.6, marginBottom: 32 }}>You will be signed out of your Resumeeit session. All your scans are safe.</p>
          <div style={{ display: 'flex', gap: 12 }}>
             <Btn v="ghost" full sz="lg" pill onClick={() => setShowLogout(false)}>Cancel</Btn>
             <Btn v="dark" full sz="lg" pill onClick={() => handleLogout()}>Sign Out</Btn>

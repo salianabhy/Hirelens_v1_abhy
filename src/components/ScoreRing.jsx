@@ -1,4 +1,4 @@
-const ScoreRing = ({ value, size = 112, run, dark }) => {
+const ScoreRing = ({ value, size = 112, run, dark, noText }) => {
   const r = (size / 2) - 10;
   const C = 2 * Math.PI * r;
   const offset = C - (value / 100) * C;
@@ -20,31 +20,35 @@ const ScoreRing = ({ value, size = 112, run, dark }) => {
         stroke={stroke}
         style={{ strokeDasharray: C, strokeDashoffset: run ? offset : C }}
       />
-      <text
-        x={size / 2} y={size / 2 - 3}
-        textAnchor="middle"
-        style={{
-          fontFamily: "'Instrument Sans'",
-          fontSize: size * 0.28,
-          fontWeight: 700,
-          fill: dark ? 'var(--tw)' : stroke,
-          letterSpacing: '-0.04em',
-        }}
-      >
-        {run ? value : '–'}
-      </text>
-      <text
-        x={size / 2} y={size / 2 + size * 0.16}
-        textAnchor="middle"
-        style={{
-          fontFamily: "'Instrument Sans'",
-          fontSize: size * 0.1,
-          fill: dark ? 'var(--td)' : 'var(--tt)',
-          fontWeight: 500,
-        }}
-      >
-        score
-      </text>
+      {!noText && (
+        <>
+          <text
+            x={size / 2} y={size / 2 - 3}
+            textAnchor="middle"
+            style={{
+              fontFamily: "'Instrument Sans'",
+              fontSize: size * 0.28,
+              fontWeight: 700,
+              fill: dark ? 'var(--tw)' : stroke,
+              letterSpacing: '-0.04em',
+            }}
+          >
+            {run ? value : '–'}
+          </text>
+          <text
+            x={size / 2} y={size / 2 + size * 0.16}
+            textAnchor="middle"
+            style={{
+              fontFamily: "'Instrument Sans'",
+              fontSize: size * 0.1,
+              fill: dark ? 'var(--td)' : 'var(--tt)',
+              fontWeight: 500,
+            }}
+          >
+            score
+          </text>
+        </>
+      )}
     </svg>
   );
 };

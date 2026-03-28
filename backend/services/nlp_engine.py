@@ -175,6 +175,19 @@ def rank_resume(resume_text: str, job_description: str = "") -> dict:
 
     risk = "Low Risk" if ats_score > 75 else "Medium Risk" if ats_score > 50 else "High Risk"
 
+    # --- Signal Extraction ------------------------------------
+    resume_lower = resume_text.lower()
+    detected_verbs = [v for v in POWER_VERBS if v in resume_lower]
+    tech_candidates = ["python","javascript","react","node","aws","sql","docker","kubernetes","git","api","machine learning","tensorflow","pytorch","java","typescript","golang","rust","mongodb","postgresql","c++"]
+    detected_tech = [t for t in tech_candidates if t in resume_lower]
+    detected_metrics = re.findall(r'\d+[\.,]?\d*\s*(?:%|percent|million|k\b|x\b|users?|customers?)?', resume_text, re.IGNORECASE)
+    
+    signals = {
+        "action_verbs": sorted(list(set(detected_verbs)))[:8],
+        "tech_keywords": sorted(list(set(detected_tech)))[:8],
+        "metrics": sorted(list(set(detected_metrics)))[:6]
+    }
+
     return {
         "score":       ats_score,
         "ats":         min(100, ats_score),
@@ -183,6 +196,7 @@ def rank_resume(resume_text: str, job_description: str = "") -> dict:
         "impact":      impact_score,
         "improvements": improvements,
         "issues":      issues,
+        "signals":     signals,
         "risk":        risk,
         "yoe":         feats["yoe_max"] or feats["date_range_years"],
         "ml_model_used": bundle is not None,

@@ -3,6 +3,7 @@ import Groq from 'groq-sdk';
 import Icon from './Icon';
 import Btn from './Btn';
 import Badge from './Badge';
+import FormattedText from './FormattedText';
 
 const MARKETS = ['India', 'United States', 'United Kingdom', 'Remote / Global'];
 
@@ -168,7 +169,9 @@ Use realistic 2024-2025 market data. Return ONLY valid JSON.`;
                 {result.negotiationTips.map((tip, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 16px', background: 'var(--s1)', borderRadius: 12 }}>
                     <div style={{ width: 20, height: 20, borderRadius: 6, background: 'var(--near-black)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '.65rem', color: 'white', fontWeight: 800 }}>{i + 1}</div>
-                    <p style={{ fontSize: '.85rem', lineHeight: 1.6, color: 'var(--ts)' }}>{tip}</p>
+                    <div style={{ fontSize: '.85rem', lineHeight: 1.6, color: 'var(--ts)' }}>
+                      <FormattedText text={tip} />
+                    </div>
                   </div>
                 ))}
               </div>

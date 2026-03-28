@@ -77,7 +77,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
       if (json.success && json.data) {
         const d = json.data;
         const finalScore = d.score ?? 45;
-        console.log('[Resumeit] Scored by custom ML model ✅', d.ml_model_used ? '(XGBoost)' : '(heuristic)');
+        console.log('[Resumeeit] Scored by custom ML model ✅', d.ml_model_used ? '(XGBoost)' : '(heuristic)');
         return {
           name:         fileName,
           score:        finalScore,
@@ -85,7 +85,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
           keyword:      d.keyword    ?? 45,
           formatting:   d.formatting ?? 45,
           impact:       d.impact     ?? 45,
-          signals:      { action_verbs: [], tech_keywords: [], metrics: [] },
+          signals:      d.signals    || { action_verbs: [], tech_keywords: [], metrics: [] },
           issues:       d.issues        || [],
           improvements: d.improvements || [],
           date:         new Date().toISOString(),
@@ -95,7 +95,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
         };
       }
     } catch (mlErr) {
-      console.warn('[Resumeit] ML backend unavailable, falling back to Groq:', mlErr.message);
+      console.warn('[Resumeeit] ML backend unavailable, falling back to Groq:', mlErr.message);
     }
 
     // ── Attempt 2: Groq LLM fallback ──────────────────────────────────────
@@ -201,7 +201,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
         processPromise.then((success) => {
           if (success) {
             if (onNotify) onNotify("Resume analyzed and saved to dashboard!");
-            setTimeout(() => go('dashboard'), 500);
+            setTimeout(() => go('results'), 500);
           }
         });
       }
@@ -228,7 +228,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '72px 20px' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px' }}>
       <div style={{ maxWidth: 500, width: '100%' }}>
 
         <p className="eyebrow ru" style={{ marginBottom: 18 }}>Step 1 of 2</p>
@@ -295,19 +295,20 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
           </div>
         )}
         {loading ? (
-          <div className="card" style={{ padding: 26, textAlign: 'center' }}>
+          <div className="glass-dark ru" style={{ padding: 40, textAlign: 'center', position: 'relative', overflow: 'hidden', borderRadius: 32, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="laser" />
             <div
               className="spin"
-              style={{ width: 34, height: 34, border: '2.5px solid var(--s2)', borderTopColor: 'var(--near-black)', borderRadius: '50%', margin: '0 auto 18px' }}
+              style={{ width: 44, height: 44, border: '3px solid rgba(255,255,255,0.05)', borderTopColor: 'var(--ind)', borderRadius: '50%', margin: '0 auto 24px', position: 'relative', zIndex: 2 }}
             />
-            <p style={{ fontWeight: 600, fontSize: '.95rem', marginBottom: 6, letterSpacing: '-.02em' }}>
-              Analyzing your resume
+            <p style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 8, color: '#fff', letterSpacing: '-.02em' }}>
+              ML Protocol Active
             </p>
-            <p style={{ fontSize: '.83rem', color: 'var(--ts)', marginBottom: 18 }}>{STEPS[step]}</p>
-            <div className="pb-track" style={{ height: 3, maxWidth: 260, margin: '0 auto' }}>
+            <p style={{ fontSize: '.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: 28, fontWeight: 500 }}>{STEPS[step]}</p>
+            <div className="pb-track pb-track-dark" style={{ height: 4, maxWidth: 280, margin: '0 auto' }}>
               <div
                 className="pb-fill"
-                style={{ width: `${((step + 1) / STEPS.length) * 100}%`, background: 'var(--near-black)' }}
+                style={{ width: `${((step + 1) / STEPS.length) * 100}%`, background: 'var(--ind)', boxShadow: '0 0 15px var(--ind)' }}
               />
             </div>
           </div>

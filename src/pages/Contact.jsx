@@ -43,7 +43,7 @@ const Contact = ({ go, onNotify }) => {
           How can we help?
         </h1>
         <p className="ru d2" style={{ color: 'var(--ts)', fontSize: '1rem', lineHeight: 1.6 }}>
-          Have a question about Resumeit? Found a bug? Let us know below.
+          Have a question about Resumeeit? Found a bug? Let us know below.
         </p>
       </div>
 

@@ -3,6 +3,7 @@ import Groq from 'groq-sdk';
 import Icon from './Icon';
 import Btn from './Btn';
 import Badge from './Badge';
+import FormattedText from './FormattedText';
 
 const CATEGORIES = ['All', 'Behavioral', 'Technical', 'Culture Fit'];
 
@@ -154,7 +155,9 @@ Write a natural, 150-200 word answer that draws from the candidate's actual expe
                 {answers[q.id] ? (
                   <div style={{ marginTop: 4, padding: '14px 18px', background: 'var(--s1)', borderRadius: 12, borderLeft: '3px solid var(--green)' }}>
                     <p style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--green)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Model Answer (STAR)</p>
-                    <p style={{ fontSize: '.85rem', lineHeight: 1.7, color: 'var(--ts)', whiteSpace: 'pre-wrap' }}>{answers[q.id]}</p>
+                    <div style={{ fontSize: '.85rem', lineHeight: 1.7, color: 'var(--ts)' }}>
+                      <FormattedText text={answers[q.id]} bulletColor="var(--green)" />
+                    </div>
                   </div>
                 ) : (
                   <Btn v="ghost" sz="xs" pill onClick={() => generateAnswer(q)} disabled={loadingAnswer === q.id} style={{ marginTop: 4 }}>

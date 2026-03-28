@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { callGroq } from '../services/ai';
 import Icon from './Icon';
 import Btn from './Btn';
+import FormattedText from './FormattedText';
 
 const SUGGESTIONS = [
   "Why is my ATS score low?",
@@ -88,7 +89,11 @@ const AICoach = ({ scans = [] }) => {
             lineHeight: 1.5,
             border: m.role === 'user' ? 'none' : '.5px solid var(--bl)'
           }}>
-            {m.text}
+            <FormattedText 
+              text={m.text} 
+              bulletColor={m.role === 'user' ? 'rgba(255,255,255,0.5)' : 'var(--ind)'} 
+              boldColor={m.role === 'user' ? '#fff' : 'var(--tp)'}
+            />
           </div>
         ))}
         {loading && (

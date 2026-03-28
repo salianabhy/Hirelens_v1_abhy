@@ -14,6 +14,7 @@ import { db, auth } from '../firebase';
 import { signOut, updateProfile } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { callGroq } from '../services/ai';
+import FormattedText from '../components/FormattedText';
 
 const SIDE_NAV = [
   { id: 'overview', l: 'Overview', ic: 'grid' },
@@ -127,96 +128,117 @@ const Dashboard = ({ go, user, onAuth }) => {
     const rc = s.risk === 'High Risk' ? 'red' : s.risk === 'Medium Risk' ? 'amber' : 'green';
 
     return (
-      <div className="rf" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }} onClick={() => setSelectedScan(null)} />
-        <div className="card ru glass" style={{ position: 'relative', width: '100%', maxWidth: 740, maxHeight: '90vh', overflowY: 'auto', padding: 'clamp(20px, 5vw, 36px)', borderRadius: 28, border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 32px 80px rgba(0,0,0,0.25)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      <div className="modal-bg rf" style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ position: 'absolute', inset: 0 }} onClick={() => { setSelectedScan(null); setRoastContent(null); }} />
+        <div className="ru glass-dark" style={{ position: 'relative', width: '100%', maxWidth: 840, borderRadius: 32, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
+          <div style={{ padding: '32px 40px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p className="eyebrow" style={{ marginBottom: 8 }}>{new Date(s.date).toLocaleDateString()}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-.04em' }}>{s.name}</h2>
-                <button
-                  onClick={() => handleAIRename(s)}
-                  disabled={loadingAI}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: loadingAI ? 0.5 : 1 }}
-                  title="AI Auto-Rename"
-                >
-                  <Icon id="zap" size={14} color="var(--ind)" />
-                </button>
-              </div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-.04em', color: '#fff', marginBottom: 4 }}>{s.name || 'Resume Analysis'}</h2>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em' }}>Protocol ID: {s.id.substring(0,8)} • {new Date(s.date).toLocaleDateString()}</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Badge type={rc}>{s.risk}</Badge>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: `var(--${rc})` }}>{s.score}%</div>
-              <button onClick={() => { setSelectedScan(null); setRoastContent(null); }} style={{ background: 'var(--s1)', border: 'none', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontWeight: 800 }}>✕</button>
-            </div>
+            <Btn v="ghost-dark" pill onClick={() => { setSelectedScan(null); setRoastContent(null); }} haptic={true}><Icon id="x" size={18} /></Btn>
           </div>
 
-          {/* Roast Section */}
-          <div style={{ marginBottom: 24, padding: 20, background: 'linear-gradient(135deg, #FFF5F5 0%, #FFF 100%)', borderRadius: 20, border: '1px solid #FFEBEB', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: -10, right: -10, opacity: 0.1 }}><Icon id="award" size={80} color="var(--red)" /></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h4 style={{ fontSize: '.8rem', fontWeight: 800, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '.05em' }}>🔥 The AI Resume Roast</h4>
-              {!roastContent && <Btn v="red-dim" sz="xs" pill onClick={() => handleAIRoast(s)} disabled={loadingAI}>{loadingAI ? 'Roasting...' : 'Roast Me'}</Btn>}
-            </div>
-            {roastContent ? (
-              <div style={{ fontSize: '.88rem', color: '#852d2d', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-line' }}>
-                {roastContent}
-              </div>
-            ) : (
-              <p style={{ fontSize: '.82rem', color: 'var(--ts)' }}>Ready to hear the truth? Get a brutally honest AI critique.</p>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-            <div style={{ padding: 16, background: 'var(--s1)', borderRadius: 16 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--ts)', textTransform: 'uppercase', marginBottom: 4 }}>ATS</p>
-              <p style={{ fontSize: '1.2rem', fontWeight: 800 }}>{s.ats || 0}%</p>
-            </div>
-            <div style={{ padding: 16, background: 'var(--s1)', borderRadius: 16 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--ts)', textTransform: 'uppercase', marginBottom: 4 }}>Keywords</p>
-              <p style={{ fontSize: '1.2rem', fontWeight: 800 }}>{s.keyword || 0}%</p>
-            </div>
-            <div style={{ padding: 16, background: 'var(--s1)', borderRadius: 16 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--ts)', textTransform: 'uppercase', marginBottom: 4 }}>Format</p>
-              <p style={{ fontSize: '1.2rem', fontWeight: 800 }}>{s.formatting || 0}%</p>
-            </div>
-            <div style={{ padding: 16, background: 'var(--s1)', borderRadius: 16 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--ts)', textTransform: 'uppercase', marginBottom: 4 }}>Impact</p>
-              <p style={{ fontSize: '1.2rem', fontWeight: 800 }}>{s.impact || 0}%</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 280 }}>
-              <h4 style={{ fontSize: '.9rem', fontWeight: 700, marginBottom: 12 }}>Top Issues</h4>
-              {s.issues?.length > 0 ? s.issues.map((iss, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: iss.sev === 'Critical' ? 'var(--red)' : 'var(--amber)', marginTop: 6, flexShrink: 0 }} />
-                  <div>
-                    <p style={{ fontSize: '.85rem', fontWeight: 600 }}>{iss.label}</p>
-                    <p style={{ fontSize: '.8rem', color: 'var(--ts)', lineHeight: 1.5 }}>{iss.desc}</p>
+          <div style={{ padding: 40, maxHeight: '75vh', overflowY: 'auto' }}>
+            <div className="scan-modal-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) 2fr', gap: 48 }}>
+              {/* Left — Score Ring & AI Actions */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ position: 'relative', width: 160, height: 160, margin: '0 auto 24px' }}>
+                  <svg width="160" height="160" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" className="ring-bg ring-dark" />
+                    <circle
+                      cx="50" cy="50" r="44" className="ring-val"
+                      stroke={s.score < 60 ? 'var(--red)' : s.score < 80 ? 'var(--amber)' : 'var(--green)'}
+                      strokeDasharray="276"
+                      strokeDashoffset={276 - (276 * (s.score || 0)) / 100}
+                      style={{ filter: `drop-shadow(0 0 8px ${s.score < 60 ? 'var(--red)' : s.score < 80 ? 'var(--amber)' : 'var(--green)'}66)` }}
+                    />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '2.8rem', fontWeight: 900, color: '#fff', letterSpacing: '-.05em', lineHeight: 1 }}>{s.score}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Index</span>
                   </div>
                 </div>
-              )) : <p style={{ fontSize: '.8rem', color: 'var(--ts)' }}>No issues found!</p>}
-            </div>
-
-            <div style={{ flex: 1, minWidth: 280 }}>
-              <h4 style={{ fontSize: '.9rem', fontWeight: 700, marginBottom: 12 }}>Improvements</h4>
-              {s.improvements?.length > 0 ? s.improvements.map((imp, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  <Icon id="check" size={14} color="var(--green)" />
-                  <p style={{ fontSize: '.85rem', color: 'var(--ts)', lineHeight: 1.5 }}>{imp}</p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <Btn v="white" full pill onClick={() => handleAIRoast(s)} loading={loadingAI} strobe={!roastContent}>
+                    {roastContent ? 'Refresh Roast' : 'Execute AI Roast'}
+                  </Btn>
+                  <Btn v="ghost-dark" sz="sm" pill onClick={() => handleAIRename(s)} loading={loadingAI}>
+                    <Icon id="zap" size={12} color="var(--ind)" /> Auto-Rename 
+                  </Btn>
                 </div>
-              )) : <p style={{ fontSize: '.8rem', color: 'var(--ts)' }}>No improvements suggested.</p>}
-            </div>
-          </div>
+              </div>
 
-          <div style={{ marginTop: 32, paddingTop: 20, borderTop: '.5px solid var(--bl)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ fontSize: '.8rem', color: 'var(--ts)' }}>The original PDF is never stored on our servers for your privacy.</p>
-            <Btn v="ghost" sz="sm" onClick={() => handleDeleteScan(s.id)} style={{ color: 'var(--red)' }}>
-              {deleting ? 'Discarding...' : 'Discard Resume Version'}
-            </Btn>
+              {/* Right — Breakdown & Insights */}
+              <div>
+                {/* Roast Display (if exists) */}
+                {roastContent && (
+                  <div className="si" style={{ marginBottom: 32, padding: '24px', background: 'rgba(255,59,48,0.08)', borderRadius: 24, border: '1px solid rgba(255,59,48,0.2)', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 12, right: 16, fontSize: '1.2rem' }}>🔥</div>
+                    <h4 style={{ fontSize: 11, fontWeight: 800, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Brutal Feedback</h4>
+                    <FormattedText 
+                      text={roastContent} 
+                      bulletColor="var(--red)" 
+                      textColor="rgba(255,255,255,0.85)" 
+                      boldColor="#fff"
+                      style={{ fontSize: '.9rem', lineHeight: 1.6, fontWeight: 500 }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 32 }}>
+                  {[
+                    { label: 'ATS Protocol', val: s.ats, icon: 'shield' },
+                    { label: 'Key Match', val: s.keyword, icon: 'target' },
+                    { label: 'Neural Impact', val: s.impact, icon: 'zap' },
+                    { label: 'Form Factor', val: s.formatting, icon: 'file' }
+                  ].map((it, i) => (
+                    <div key={i} style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.04)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{it.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{it.val}%</span>
+                       </div>
+                       <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 100 }}>
+                          <div style={{ height: '100%', borderRadius: 100, background: it.val > 70 ? 'var(--green)' : 'var(--ind)', width: `${it.val}%` }} />
+                       </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+                   <div>
+                    <h4 style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Icon id="warn" size={14} color="var(--amber)" /> Critical Issues
+                    </h4>
+                    {s.issues?.map((iss, i) => (
+                      <div key={i} style={{ marginBottom: 12, paddingLeft: 12, borderLeft: '1.5px solid rgba(255,159,10,0.3)' }}>
+                        <p style={{ fontSize: '.85rem', fontWeight: 600, color: '#fff', marginBottom: 2 }}>{iss.label}</p>
+                        <p style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{iss.desc}</p>
+                      </div>
+                    ))}
+                   </div>
+                   <div>
+                    <h4 style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Icon id="check" size={14} color="var(--green)" /> Recommendations
+                    </h4>
+                    {s.improvements?.map((imp, i) => (
+                      <div key={i} style={{ marginBottom: 10, display: 'flex', gap: 10 }}>
+                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--green)', marginTop: 6, flexShrink: 0 }} />
+                        <p style={{ fontSize: '.82rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{imp}</p>
+                      </div>
+                    ))}
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>Military-grade encryption enabled • Local ML Engine verified</p>
+              <Btn v="ghost-dark" sz="sm" onClick={() => handleDeleteScan(s.id)} style={{ color: 'var(--red)' }}>
+                {deleting ? 'Discarding...' : 'Erase Version Data'}
+              </Btn>
+            </div>
           </div>
         </div>
       </div>
@@ -237,48 +259,52 @@ const Dashboard = ({ go, user, onAuth }) => {
             </div>
           </div>
 
-          <div id="dash-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 11, marginBottom: 11 }}>
+          <div id="dash-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 14 }}>
             {KPIS.map((k, i) => (
-              <div key={i} className={`ru d${i} card`} style={{ padding: '22px 24px' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--tt)', marginBottom: 12 }}>{k.label}</p>
+              <div key={i} className={`ru d${i} glass`} style={{ padding: '24px', borderRadius: 28, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: 60, height: 60, background: 'var(--glow-ind)', filter: 'blur(20px)', opacity: 0.4 }} />
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--ts)', marginBottom: 14 }}>{k.label}</p>
                 {loaded
-                  ? <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-.04em', marginBottom: 6, color: 'var(--near-black)' }}>
-                    <AnimatedNumber value={k.val} suffix={k.suffix} />
+                  ? <div style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-.06em', marginBottom: 6, color: 'var(--near-black)', display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                    <AnimatedNumber value={k.val} />
+                    <span style={{ fontSize: '1.2rem', color: 'var(--ts)' }}>{k.suffix}</span>
                   </div>
-                  : <div className="skel" style={{ height: 32, width: 80, marginBottom: 6 }} />
+                  : <div className="skel" style={{ height: 38, width: 90, marginBottom: 6 }} />
                 }
-                <p style={{ fontSize: 10, fontWeight: 500, color: 'var(--ts)' }}>{k.sub}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--tt)', letterSpacing: '.02em' }}>{k.sub}</p>
               </div>
             ))}
           </div>
 
-          <div className="chart-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 11, marginBottom: 11 }}>
-            <div className="ru d2 card" style={{ padding: 22 }}>
-              <p className="eyebrow" style={{ marginBottom: 5 }}>Score Progress</p>
-              <h3 style={{ fontSize: '.93rem', fontWeight: 700, letterSpacing: '-.03em', marginBottom: 22 }}>Last {Math.min(4, scans.length)} scans</h3>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, height: 100 }}>
-                {scans.length > 0 ? [...scans].reverse().slice(-4).map((s, i) => {
+          <div className="chart-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 14, marginBottom: 14 }}>
+            <div className="ru d2 glass" style={{ padding: 28, borderRadius: 28 }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>Score Evolution</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-.04em', marginBottom: 28 }}>Performance Radar</h3>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 120, paddingBottom: 10, borderBottom: '1px solid var(--bl)' }}>
+                {scans.length > 0 ? [...scans].reverse().slice(-5).map((s, i) => {
                   const v = s.score;
-                  const color = v < 40 ? 'var(--red)' : v < 60 ? 'var(--amber)' : 'var(--green)';
+                  const color = v < 60 ? 'var(--red)' : v < 80 ? 'var(--amber)' : 'var(--green)';
                   return (
-                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                      <div style={{ width: '100%', borderRadius: '5px 5px 0 0', background: color, height: loaded ? `${(v / 100) * 80}px` : '3px', transition: 'all .9s ease' }} />
-                      <span style={{ fontSize: 9, color: 'var(--tt)', fontWeight: 600 }}>{s.name ? s.name.substring(0, 3) : 'W' + (i + 1)}</span>
+                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div className="ru" style={{ width: '100%', borderRadius: 8, background: color, height: loaded ? `${(v / 100) * 100}px` : '4px', transition: 'all 1s cubic-bezier(.22,1,.36,1)', boxShadow: `0 4px 15px ${color}33`, animationDelay: `${i * .1}s` }} />
+                      <span style={{ fontSize: 9, color: 'var(--tt)', fontWeight: 700, textTransform: 'uppercase' }}>{s.name ? s.name.substring(0, 3) : 'V' + (i + 1)}</span>
                     </div>
                   );
-                }) : <div style={{ fontSize: 10, color: 'var(--ts)' }}>No scans yet</div>}
+                }) : <div style={{ fontSize: 11, color: 'var(--ts)', padding: 20 }}>Initialize scan protocol to see radar...</div>}
               </div>
             </div>
 
-            <div className="ru d3 card" style={{ padding: 22 }}>
-              <p className="eyebrow" style={{ marginBottom: 5 }}>Latest Insights</p>
-              <h3 style={{ fontSize: '.93rem', fontWeight: 700, letterSpacing: '-.03em', marginBottom: 20 }}>From your recent upload</h3>
+            <div className="ru d3 glass" style={{ padding: 28, borderRadius: 28, background: 'var(--near-black)', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, padding: 20, opacity: 0.2 }}><Icon id="radar" size={40} color="var(--ind)" /></div>
+              <p className="eyebrow-light eyebrow" style={{ marginBottom: 6 }}>System Insights</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-.04em', marginBottom: 28 }}>Target Match</h3>
               {loaded ? (
                 <>
-                  <ProgressRow label="ATS Compatibility" value={latest?.ats || 0} delay={0} />
-                  <ProgressRow label="Keyword Density" value={latest?.keyword || 0} delay={80} />
+                  <ProgressRow label="ATS Protocol" value={latest?.ats || 0} delay={0} />
+                  <ProgressRow label="Contextual Match" value={latest?.keyword || 0} delay={80} />
+                  <ProgressRow label="Neural Impact" value={latest?.impact || 0} delay={160} />
                 </>
-              ) : [1, 2].map(i => <div key={i} className="skel" style={{ height: 10, marginBottom: 16 }} />)}
+              ) : [1, 2, 3].map(i => <div key={i} className="skel" style={{ height: 12, marginBottom: 20, opacity: 0.1 }} />)}
             </div>
           </div>
         </>

@@ -1,6 +1,6 @@
-const Btn = ({ children, v = 'dark', sz = 'md', pill, full, onClick, style, loading }) => (
+const Btn = ({ children, v = 'dark', sz = 'md', pill, full, onClick, style, loading, strobe, haptic = true }) => (
   <button
-    className={`btn btn-${v} sz-${sz} ${pill ? 'pill' : ''} ${full ? 'w100' : ''}`}
+    className={`btn btn-${v} sz-${sz} ${pill ? 'pill' : ''} ${full ? 'w100' : ''} ${strobe ? 'strobe-effect' : ''} ${haptic ? 'haptic-click' : ''}`}
     onClick={onClick}
     style={style}
     disabled={loading}
