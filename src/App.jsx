@@ -161,6 +161,11 @@ const App = () => {
         }
       } else {
         setUser(null);
+        // Redirect to landing if on a protected page
+        const protectedPages = ['dashboard', 'resumebuilder', 'livebuilder'];
+        if (protectedPages.includes(page)) {
+          go('landing');
+        }
       }
     });
     return () => unsub();
