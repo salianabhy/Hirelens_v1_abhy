@@ -36,7 +36,7 @@ yarn-error.log*
 
 # Python ML backend
 backend/venv/
-backend/models/
+# backend/models/ 
 backend/__pycache__/
 backend/services/__pycache__/
 *.pyc

@@ -106,29 +106,32 @@ def _spacy_impact(text: str) -> float:
 # Public entry point
 # -------------------------------------------------------
 def _is_resume(text: str) -> bool:
+    if not text or len(text.strip()) < 50:
+        print("DEBUG: Rejection - Text too short or empty")
+        return False
+        
     lower = text.lower()
-    # Expanded professional markers
+    # Very broad professional markers
     professional_markers = [
         "experience", "work", "education", "skills", "projects", "summary",
         "objective", "university", "college", "employment", "achievements",
-        "history", "background", "awards", "certification", "profile", "contact"
+        "history", "background", "awards", "certification", "profile", "contact",
+        "professional", "technical", "personal", "details", "phone", "email"
     ]
     found = sum(1 for m in professional_markers if m in lower)
     
-    # Check for name/contact-like patterns
     has_email = bool(re.search(r'[\w.-]+@[\w.-]+\.\w+', text))
     has_phone = bool(re.search(r'(\+?\d[\d\s\-\(\)]{8,}\d)', text))
     has_contact = has_email or has_phone
     
-    print(f"DEBUG: Found {found} markers, Has contact: {has_contact}")
+    print(f"DEBUG: Found {found} markers, Has contact: {has_contact}, Text length: {len(text)}")
     
-    # Validation logic:
-    # 1. If we find at least 3 markers, it's likely a resume even without a clear email/phone (e.g. just a LinkedIn link)
-    if found >= 3: return True
-    # 2. If we find 1-2 markers AND contact info, it's likely a resume
-    if found >= 1 and has_contact: return True
+    # Extremely lenient validation:
+    # If 1+ marker OR contact info OR just a substantial amount of text (word count > 40)
+    words = text.split()
+    if found >= 1 or has_contact or len(words) > 40:
+        return True
     
-    # Otherwise, it might be a random document
     return False
 
 DEFAULT_JD = ("software engineer developer python javascript react node aws cloud "

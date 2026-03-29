@@ -47,6 +47,8 @@ async def parse_pdf(file: UploadFile = File(...)):
                 extracted = page.extract_text()
                 if extracted:
                     text += extracted + "\n"
+        
+        print(f"DEBUG: Extracted {len(text)} chars from PDF. Preview: {text[:200]}...")
         return {"success": True, "text": text}
     except Exception as e:
         print(traceback.format_exc())
