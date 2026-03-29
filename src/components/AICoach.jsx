@@ -69,7 +69,7 @@ const AICoach = ({ user, scans = [] }) => {
     } catch (e) { console.error("Persistence error:", e); }
 
     const latestContext = scans.length > 0 
-      ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues)}. Improvements: ${JSON.stringify(scans[0].improvements)}. RAW RESUME TEXT: """${scans[0].text?.substring(0, 4000) || "No text extracted"}"""`
+      ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues?.slice(0, 3))}. Improvements: ${JSON.stringify(scans[0].improvements?.slice(0, 3))}. RAW RESUME (TRUNCATED): """${scans[0].text?.substring(0, 2000) || "No text extracted"}"""`
       : `No resume uploaded yet.`;
 
     try {

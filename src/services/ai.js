@@ -26,10 +26,10 @@ export const callGroq = async (messages, options = {}, attempt = 0) => {
       ? [{ role: "user", content: messages }]
       : messages;
 
-    console.log(`[Groq] Calling ${options.model || "llama-3.1-70b-versatile"} with ${formattedMessages.length} messages...`);
+    console.log(`[Groq] Calling ${options.model || "llama-3.1-8b-instant"} with ${formattedMessages.length} messages...`);
     const completion = await groq.chat.completions.create({
       messages: formattedMessages,
-      model: options.model || "llama-3.1-70b-versatile",
+      model: options.model || "llama-3.1-8b-instant",
       response_format: options.json ? { type: "json_object" } : undefined,
       temperature: options.temperature ?? 0.7,
     });
@@ -48,7 +48,7 @@ export const callGroq = async (messages, options = {}, attempt = 0) => {
       message: err.message, 
       status: err.status,
       type: err.type,
-      config: { model: options.model || "llama-3.1-70b-versatile" }
+      config: { model: options.model || "llama-3.1-8b-instant" }
     });
     throw new Error(err.message || "AI Service Unavailable");
   }
