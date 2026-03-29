@@ -283,6 +283,8 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       doc.setTextColor(0, 0, 0);
       const nameText = (data.name || "").toUpperCase();
       doc.text(nameText, pageWidth / 2, y, { align: 'center' });
+      y += 10; // Separation from name to contact info
+      
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(90, 90, 90);
