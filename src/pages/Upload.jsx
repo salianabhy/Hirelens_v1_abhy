@@ -65,6 +65,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
   const generateAIAssessment = async (text, fileName, targetRole) => {
     const truncatedText = text?.substring(0, 10000) || '';
 
+    console.log('[Resumeeit] Attempting connection to:', ML_BACKEND);
     // ── Attempt 1: Custom ML backend (running locally) ─────────────────────
     try {
       const res = await fetch(`${ML_BACKEND}/api/score-resume`, {
