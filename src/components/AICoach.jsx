@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { callGroq } from '../services/ai';
-import Icon from './Icon';
-import Btn from './Btn';
-import FormattedText from './FormattedText';
+import { db } from '../firebase';
+import { doc, getDoc, setDoc, onSnapshot, arrayUnion, updateDoc } from 'firebase/firestore';
 
 const SUGGESTIONS = [
   "Why is my ATS score low?",
@@ -11,7 +8,7 @@ const SUGGESTIONS = [
   "Optimize my latest experience"
 ];
 
-const AICoach = ({ scans = [] }) => {
+const AICoach = ({ user, scans = [] }) => {
   const [messages, setMessages] = useState([
     { role: 'assistant', text: "Hello! I'm your AI Career Coach. I've analyzed your recent scans. How can I help you improve your professional profile today?" }
   ]);
@@ -21,20 +18,53 @@ const AICoach = ({ scans = [] }) => {
 
   const latest = scans[0] || null;
 
+  // Load history from Firestore
+  useEffect(() => {
+    if (!user?.uid) return;
+    const coachRef = doc(db, 'users', user.uid, 'coach', 'history');
+    
+    const unsub = onSnapshot(coachRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.messages && data.messages.length > 0) {
+          setMessages(data.messages);
+        }
+      }
+    });
+
+    return () => unsub();
+  }, [user]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const ask = async (text) => {
-    if (!text.trim()) return;
+    if (!text.trim() || !user?.uid) return;
+    
     const userMsg = { role: 'user', text };
-    const newHistory = [...messages, userMsg];
-    setMessages(newHistory);
+    const coachRef = doc(db, 'users', user.uid, 'coach', 'history');
+
+    // Optimistically update local state
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
+    // Save user message to Firestore
+    try {
+      const docSnap = await getDoc(coachRef);
+      if (!docSnap.exists()) {
+        await setDoc(coachRef, { messages: [
+          { role: 'assistant', text: "Hello! I'm your AI Career Coach. I've analyzed your recent scans. How can I help you improve your professional profile today?" },
+          userMsg
+        ] });
+      } else {
+        await updateDoc(coachRef, { messages: arrayUnion(userMsg) });
+      }
+    } catch (e) { console.error("Persistence error:", e); }
+
     const latestContext = scans.length > 0 
-      ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues)}. Improvements: ${JSON.stringify(scans[0].improvements)}. RAW RESUME TEXT: """${scans[0].text}"""`
+      ? `User's Latest Resume Score: ${scans[0].score}%. ATS: ${scans[0].ats}%. Issues: ${JSON.stringify(scans[0].issues)}. Improvements: ${JSON.stringify(scans[0].improvements)}. RAW RESUME TEXT: """${scans[0].text?.substring(0, 4000) || "No text extracted"}"""`
       : `No resume uploaded yet.`;
 
     try {
@@ -47,16 +77,22 @@ const AICoach = ({ scans = [] }) => {
 
       const groqMsgs = [
          sysMsg,
-         ...newHistory.map(m => ({ role: m.role, content: m.text }))
+         ...messages.map(m => ({ role: m.role, content: m.text })),
+         { role: 'user', content: text }
       ];
 
       const completion = await callGroq(groqMsgs);
 
       const responseText = completion.choices[0]?.message?.content || "I couldn't process that.";
-      setMessages(prev => [...prev, { role: 'assistant', text: responseText }]);
+      const aiMsg = { role: 'assistant', text: responseText };
+      
+      // Save AI response to Firestore
+      await updateDoc(coachRef, { messages: arrayUnion(aiMsg) });
+      
     } catch (err) {
-      console.error("Coach Error:", err);
-      setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I am having trouble connecting to the API right now." }]);
+      console.error("Coach Error Details:", err);
+      const errMsg = { role: 'assistant', text: "I'm having a brief connection issue with the neural network. Please try again in 5 seconds." };
+      setMessages(prev => [...prev, errMsg]);
     }
     setLoading(false);
   };

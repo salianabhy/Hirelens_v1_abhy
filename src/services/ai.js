@@ -26,9 +26,10 @@ export const callGroq = async (messages, options = {}, attempt = 0) => {
       ? [{ role: "user", content: messages }]
       : messages;
 
+    console.log(`[Groq] Calling ${options.model || "llama-3.1-70b-versatile"} with ${formattedMessages.length} messages...`);
     const completion = await groq.chat.completions.create({
       messages: formattedMessages,
-      model: options.model || "llama-3.1-8b-instant",
+      model: options.model || "llama-3.1-70b-versatile",
       response_format: options.json ? { type: "json_object" } : undefined,
       temperature: options.temperature ?? 0.7,
     });
@@ -38,11 +39,17 @@ export const callGroq = async (messages, options = {}, attempt = 0) => {
     // 429 = Rate Limit. Apply Exponential Backoff (1s, 2s, 4s)
     if (err.status === 429 && attempt < 3) {
       const wait = Math.pow(2, attempt) * 1000;
+      console.warn(`[Groq] Rate limited. Retrying in ${wait}ms...`);
       await new Promise(r => setTimeout(r, wait));
       return callGroq(messages, options, attempt + 1);
     }
     
-    console.error("Groq Service Error:", err);
+    console.error("Groq Service Error Detailed:", { 
+      message: err.message, 
+      status: err.status,
+      type: err.type,
+      config: { model: options.model || "llama-3.1-70b-versatile" }
+    });
     throw new Error(err.message || "AI Service Unavailable");
   }
 };

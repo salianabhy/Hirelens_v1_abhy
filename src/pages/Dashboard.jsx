@@ -125,7 +125,20 @@ const Dashboard = ({ go, user, onAuth }) => {
   const ScanModal = () => {
     if (!selectedScan) return null;
     const s = selectedScan;
-    const rc = s.risk === 'High Risk' ? 'red' : s.risk === 'Medium Risk' ? 'amber' : 'green';
+    const rc = s.risk?.includes('High') ? 'red' : s.risk?.includes('Medium') ? 'amber' : 'green';
+
+    // Standardization: getSolution logic for the dashboard
+    const getSolution = (label) => {
+      const solutions = {
+        'Resume Too Short': 'Expert Solution: Expand your bullet points to include specific tools and methodologies used.',
+        'Missing Experience Section': 'Expert Solution: Ensure your headline for past work exactly matches "Experience" or "Professional History".',
+        'Incomplete Contact Info': 'Expert Solution: Explicitly list both a professional email and a phone number in the header.',
+        'Potential Keyword Stuffing': 'Expert Tip: Weave keywords naturally into project descriptions rather than listing them in a block.',
+        'No Experience Dates': 'Expert Solution: Format dates clearly as Month Year – Month Year (e.g. June 2021 – Present).',
+        'Invalid Document': 'Expert Tip: Ensure your PDF is text-searchable (not a flat image) and uses standard fonts like Arial or Roboto.'
+      };
+      return solutions[label] || 'Expert Tip: Use the STAR method to fix this signal.';
+    };
 
     return (
       <div className="modal-bg rf" style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -214,7 +227,8 @@ const Dashboard = ({ go, user, onAuth }) => {
                     {s.issues?.map((iss, i) => (
                       <div key={i} style={{ marginBottom: 12, paddingLeft: 12, borderLeft: '1.5px solid rgba(255,159,10,0.3)' }}>
                         <p style={{ fontSize: '.85rem', fontWeight: 600, color: '#fff', marginBottom: 2 }}>{iss.label}</p>
-                        <p style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{iss.desc}</p>
+                        <p style={{ fontSize: '.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4, marginBottom: 4 }}>{iss.desc}</p>
+                        <p style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--ind)', background: 'rgba(94,92,230,0.1)', padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>{getSolution(iss.label)}</p>
                       </div>
                     ))}
                    </div>
@@ -362,10 +376,10 @@ const Dashboard = ({ go, user, onAuth }) => {
       </div>
     );
 
-    if (tab === 'matcher') return <div className="ru"> {renderSubHeader('Job Matcher')} <JobMatcher resumeText={latest?.extractedText || latest?.text || latest?.name || ""} /> </div>;
-    if (tab === 'coach') return <div className="ru"> {renderSubHeader('AI Career Coach')} <AICoach scans={scans} /> </div>;
-    if (tab === 'cover') return <div className="ru"> {renderSubHeader('Cover Letter')} <CoverLetter scans={scans} /> </div>;
-    if (tab === 'interview') return <div className="ru"> {renderSubHeader('Interview Prep')} <InterviewPrep scans={scans} /> </div>;
+    if (tab === 'matcher') return <div className="ru"> {renderSubHeader('Job Matcher')} <JobMatcher user={user} resumeText={latest?.extractedText || latest?.text || latest?.name || ""} /> </div>;
+    if (tab === 'coach') return <div className="ru"> {renderSubHeader('AI Career Coach')} <AICoach user={user} scans={scans} /> </div>;
+    if (tab === 'cover') return <div className="ru"> {renderSubHeader('Cover Letter')} <CoverLetter user={user} scans={scans} /> </div>;
+    if (tab === 'interview') return <div className="ru"> {renderSubHeader('Interview Prep')} <InterviewPrep user={user} scans={scans} /> </div>;
 
     // Settings tab removed
 
