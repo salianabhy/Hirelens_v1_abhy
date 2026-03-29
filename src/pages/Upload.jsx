@@ -101,14 +101,18 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
     // ── Attempt 2: Groq LLM fallback ──────────────────────────────────────
     const prompt = `
       You are an expert ATS and senior technical recruiter.
-      Evaluate the following resume against the target role: ${targetRole || 'General/Unspecified'}.
+      Your FIRST task is to determine if the following text is actually a professional resume or curriculum vitae.
+      If the text is NOT a resume (e.g. it is a class assignment, a random image caption, a letter, or unrelated text), you MUST return a score of 5 and state "INVALID DOCUMENT" in the improvements.
+
+      Evaluate the following text against the target role: ${targetRole || 'General/Unspecified'}.
       Resume Text: ${truncatedText}
+
       Respond with ONLY valid JSON matching this exact schema:
       {
-        "score": 85, "ats": 80, "keyword": 90, "formatting": 85, "impact": 75,
-        "signals": { "action_verbs": ["Developed"], "tech_keywords": ["React"], "metrics": ["20%"] },
-        "issues": [{ "label": "Missing Metrics", "desc": "Quantify your achievements.", "sev": "Critical" }],
-        "improvements": ["Add metrics", "Use stronger action verbs"]
+        "score": 5, "ats": 5, "keyword": 5, "formatting": 5, "impact": 5,
+        "signals": { "action_verbs": [], "tech_keywords": [], "metrics": [] },
+        "issues": [{ "label": "Invalid Document", "desc": "This document does not appear to be a professional resume.", "sev": "Critical" }],
+        "improvements": ["Please upload a standard resume in PDF or Word format."]
       }
     `;
     try {

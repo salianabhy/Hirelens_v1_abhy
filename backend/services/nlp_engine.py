@@ -105,12 +105,40 @@ def _spacy_impact(text: str) -> float:
 # -------------------------------------------------------
 # Public entry point
 # -------------------------------------------------------
+def _is_resume(text: str) -> bool:
+    lower = text.lower()
+    # A resume must have at least some professional markers
+    professional_markers = [
+        "experience", "work", "education", "skills", "projects", "summary",
+        "objective", "university", "college", "employment", "achievements"
+    ]
+    found = sum(1 for m in professional_markers if m in lower)
+    # If less than 2 major markers, it's likely not a resume
+    if found < 2: return False
+    
+    # Check for name/contact-like patterns (very basic)
+    has_contact = bool(re.search(r'[\w.-]+@[\w.-]+\.\w+', text)) or bool(re.search(r'(\+?\d[\d\s\-\(\)]{8,}\d)', text))
+    if not has_contact and found < 4: return False
+    
+    return True
+
 DEFAULT_JD = ("software engineer developer python javascript react node aws cloud "
               "frontend backend machine learning data sql agile leadership communication "
               "REST API architecture git docker kubernetes")
 
 def rank_resume(resume_text: str, job_description: str = "") -> dict:
     jd = job_description.strip() or DEFAULT_JD
+    
+    # --- Document Validation ----------------------------------
+    is_valid = _is_resume(resume_text)
+    if not is_valid:
+        return {
+            "score": 5, "ats": 5, "keyword": 5, "formatting": 5, "impact": 5,
+            "improvements": ["Upload a valid professional resume. This document does not appear to be a career document."],
+            "issues": [{"label": "Invalid Document", "desc": "The neural engine could not detect standard resume sections or contact information.", "sev": "Critical"}],
+            "signals": {"action_verbs": [], "tech_keywords": [], "metrics": []},
+            "risk": "High Risk", "yoe": 0, "ml_model_used": False
+        }
 
     # --- ML model prediction (if trained) ---------------------
     bundle = _load_model()
