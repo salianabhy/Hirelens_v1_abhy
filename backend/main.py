@@ -20,6 +20,10 @@ class ScoreRequest(BaseModel):
     text: str
     job_description: str = ""
 
+@app.get("/")
+def root():
+    return {"message": "Resumeeit ML API is Online"}
+
 @app.get("/health")
 def health():
     return {"status": "ok", "message": "ML ATS Engine is running natively!"}
