@@ -171,18 +171,18 @@ const App = () => {
     if (user && results && !results.is_persisted) {
       const persistScan = async () => {
         try {
-          const scanId = `scan_${Date.now()}`;
+          const scanId = results.id || `scan_${Date.now()}`;
           const scanRef = doc(db, 'users', user.uid, 'scans', scanId);
           
           await setDoc(scanRef, {
             ...results,
             id: scanId,
             userId: user.uid,
-            timestamp: new Date().toISOString(),
+            timestamp: results.date || new Date().toISOString(),
           });
           
           // Mark as persisted locally to avoid double-write
-          const updatedResults = { ...results, is_persisted: true };
+          const updatedResults = { ...results, id: scanId, is_persisted: true };
           setResults(updatedResults);
           
           showToast("Resume report saved to your profile! 💎", "success");

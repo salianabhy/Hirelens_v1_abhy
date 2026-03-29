@@ -179,14 +179,19 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
         const text = await extractText(file);
         const analysis = await generateAIAssessment(text, file.name || 'Resume', role);
         const cleanAnalysis = sanitizeForFirebase(analysis);
-        setResults(cleanAnalysis);
+        const scanId = `scan_${Date.now()}`;
+        const analysisWithId = { ...cleanAnalysis, id: scanId };
 
         if (user?.uid) {
-          const safeName = (file.name || 'document').replace(/[^a-zA-Z0-9]/g, '_');
-          await setDoc(doc(db, 'users', user.uid, 'scans', safeName), {
-            ...cleanAnalysis,
+          await setDoc(doc(db, 'users', user.uid, 'scans', scanId), {
+            ...analysisWithId,
           });
+          // Mark as persisted so App.jsx doesn't save it again
+          analysisWithId.is_persisted = true;
         }
+
+        setResults(analysisWithId);
+        return true;
         return true;
       } catch (err) {
         console.error("Analysis background process failed:", err);

@@ -43,23 +43,31 @@ const Results = ({ go, user, onAuth, data }) => {
     { label: 'Impact language',   value: data?.impact || 34 },
   ];
 
-  const issues = data?.issues?.length ? data.issues : [
+  const issues = data?.issues || [
     { label: 'Keyword Optimization', sev: 'Critical', desc: 'Missing high-impact technical keywords found in similar roles.' },
     { label: 'Quantifiable Metrics', sev: 'High', desc: 'Achievement data is currently descriptive. ATS systems prefer numeric proof.' },
     { label: 'Visual Hierarchy', sev: 'Medium', desc: 'Section headers are detectable but could benefit from standard ATS-friendly labeling.' }
   ];
 
-  const improvements = data?.improvements?.length ? data.improvements : [
+  const improvements = data?.improvements || [
     "Tailor your language. Incorporate exact keywords from your target job description.",
     "Convert passive sentences into active achievement statements.",
     "Ensure your technical skills are grouped by category (e.g. Languages, Frameworks).",
     "Add a dedicated 'Projects' section to showcase practical application of skills."
   ];
 
-  // Ensure the specific advice is always present if it's an AI coach suggestion
-  if (!improvements.some(i => i.includes("Tailor your language"))) {
-    improvements.unshift("Tailor your language. Incorporate exact keywords from your target job description.");
-  }
+  // Map solutions to issue types for a more professional feel
+  const getSolution = (label) => {
+    const solutions = {
+      'Resume Too Short': 'Expert Solution: Expand your bullet points to include specific tools and methodologies used.',
+      'Missing Experience Section': 'Expert Solution: Ensure your headline for past work exactly matches "Experience" or "Professional History".',
+      'Incomplete Contact Info': 'Expert Solution: Explicitly list both a professional email and a phone number in the header.',
+      'Potential Keyword Stuffing': 'Expert Tip: Weave keywords naturally into project descriptions rather than listing them in a block.',
+      'No Experience Dates': 'Expert Solution: Format dates clearly as Month Year – Month Year (e.g. June 2021 – Present).',
+      'Invalid Document': 'Expert Tip: Ensure your PDF is text-searchable (not a flat image) and uses standard fonts like Arial or Roboto.'
+    };
+    return solutions[label] || 'Expert Tip: Use the STAR method (Situation, Task, Action, Result) to fix this signal.';
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 300);
