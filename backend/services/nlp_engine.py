@@ -36,15 +36,17 @@ POWER_VERBS = [
     "led", "built", "designed", "developed", "increased", "reduced",
     "managed", "deployed", "optimised", "delivered", "launched", "scaled",
     "architected", "automated", "improved", "created", "implemented",
-    "negotiated", "mentored", "collaborated",
+    "negotiated", "mentored", "collaborated", "spearheaded", "engineered",
+    "revitalized", "orchestrated", "pioneered", "standardized", "accelerated",
+    "transformed", "integrated", "innovated", "cultivated", "leveraged",
 ]
 
 SECTION_KEYWORDS = {
-    "education": ["education", "university", "college", "bachelor", "master", "degree", "phd"],
-    "experience": ["experience", "employment", "work history", "professional"],
-    "skills":    ["skills", "technologies", "tools", "competencies", "proficiencies"],
-    "projects":  ["projects", "portfolio", "github"],
-    "summary":   ["summary", "objective", "profile"],
+    "education": ["education", "university", "college", "bachelor", "master", "degree", "phd", "academic", "scholar"],
+    "experience": ["experience", "employment", "work history", "professional history", "background", "tenure", "projects"],
+    "skills":    ["skills", "technologies", "tools", "competencies", "proficiencies", "stack", "expertise"],
+    "projects":  ["projects", "portfolio", "github", "open source", "labs"],
+    "summary":   ["summary", "objective", "profile", "about me", "overview"],
 }
 
 FEATURE_ORDER = [
@@ -71,18 +73,36 @@ def extract_features(text: str) -> dict:
     features["has_linkedin"] = int("linkedin" in lower)
     features["has_github"]   = int("github" in lower)
 
-    tech_words = ["python","javascript","react","node","aws","sql","docker","kubernetes","git","api","machine learning","tensorflow","pytorch","java","typescript","golang","rust","mongodb","postgresql","c++"]
+    tech_words = [
+        "python","javascript","react","node","aws","sql","docker","kubernetes","git","api",
+        "machine learning","tensorflow","pytorch","java","typescript","golang","rust",
+        "mongodb","postgresql","c++","next.js","tailwind","gcp","snowflake","azure",
+        "terraform","graphql","redis","elasticsearch","jenkins","linux","flask","django",
+        "fastapi","vue","angular","spark","hadoop","data science","devops","cicd"
+    ]
     features["tech_keyword_count"] = sum(1 for t in tech_words if t in lower)
 
     years = re.findall(r'(\d+)\+?\s*(?:years?|yrs?)', lower)
     features["yoe_max"] = max([int(y) for y in years], default=0)
 
-    date_pairs = re.findall(r'(20\d{2})\s*(?:-|to|–)\s*(20\d{2}|present|current)', lower)
+    # Enhanced date range detection (handles Month Year or Year-Year)
+    date_pairs = re.findall(r'((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)?\s*\d{4})\s*(?:-|to|–|until)\s*(\d{4}|present|current|now)', lower)
     total = 0
-    for s, e in date_pairs:
-        end = 2026 if e in ["present","current"] else int(e)
-        total += max(0, end - int(s))
-    features["date_range_years"] = min(total, 20)
+    for s_str, e_str in date_pairs:
+        try:
+            # Extract only the year part if month is present
+            s_match = re.search(r'\d{4}', s_str)
+            e_match = re.search(r'\d{4}', e_str)
+            s_year = int(s_match.group()) if s_match else 0
+            if e_str in ["present","current","now"]:
+                e_year = 2026
+            else:
+                e_year = int(e_match.group()) if e_match else 0
+            
+            if s_year > 1950 and e_year >= s_year:
+                total += (e_year - s_year)
+        except: continue
+    features["date_range_years"] = min(total, 25)
 
     return features
 
@@ -200,20 +220,32 @@ def rank_resume(resume_text: str, job_description: str = "") -> dict:
         improvements.append("Quantify achievements using numbers and strong action verbs (e.g. 'Increased revenue by 30%').")
     if not feats["has_linkedin"]:
         improvements.append("Add a LinkedIn profile URL to increase recruiter trust signals.")
-    if not feats["has_github"] and feats["tech_keyword_count"] > 2:
-        improvements.append("Include a GitHub link — it significantly boosts credibility for technical roles.")
-
+    
+    # --- Advanced Issue Detection ----------------------------
     if feats["too_short"]:
         issues.append({"label": "Resume Too Short", "desc": "Less than 150 words detected. ATS systems need enough content to parse correctly.", "sev": "Critical"})
     if not feats["has_experience"]:
         issues.append({"label": "Missing Experience Section", "desc": "No recognisable 'Experience' section found. This is the most heavily weighted ATS factor.", "sev": "Critical"})
+    
+    # New: Contact Density
+    if not (feats["has_email"] and feats["has_phone"]):
+        issues.append({"label": "Incomplete Contact Info", "desc": "Missing either email or phone number. Recruiter reach-out probability drops by 40%.", "sev": "Medium"})
+    
+    # New: Keyword Stuffing (Signal checking)
+    if feats["tech_keyword_count"] > 25:
+        issues.append({"label": "Potential Keyword Stuffing", "desc": "Unusually high technical keyword density. Ensure these are backed by projects to avoid manual screening bans.", "sev": "Low"})
+
     if feats["yoe_max"] == 0 and feats["date_range_years"] == 0:
         issues.append({"label": "No Experience Dates", "desc": "Cannot infer tenure. Ensure role date ranges are present (e.g. Jan 2020 – Present).", "sev": "Medium"})
 
     if not improvements:
         improvements.append("Great structure! Fine-tune your summary to match the specific company's values.")
 
-    risk = "Low Risk" if ats_score > 75 else "Medium Risk" if ats_score > 50 else "High Risk"
+    # Refined Risk assessment
+    if ats_score > 85: risk = "Low Risk (Highly Competitive)"
+    elif ats_score > 70: risk = "Low Risk"
+    elif ats_score > 50: risk = "Medium Risk"
+    else: risk = "High Risk"
 
     # --- Signal Extraction ------------------------------------
     resume_lower = resume_text.lower()

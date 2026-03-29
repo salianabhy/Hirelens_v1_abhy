@@ -129,7 +129,7 @@ const Results = ({ go, user, onAuth, data }) => {
                    </span>
                 </div>
                 <h3 style={{ fontSize: '2.1rem', fontWeight: 900, color: 'var(--tp)', letterSpacing: '-.05em', marginBottom: 12, lineHeight: 1 }}>
-                  {score < 60 ? 'Structural Gap' : score < 80 ? 'Benchmark Verified' : 'Industry Leader'}
+                  {score < 60 ? 'Structural Gap' : score < 85 ? 'Benchmark Verified' : 'Neural Precision'}
                 </h3>
                 <p style={{ color: 'var(--ts)', fontSize: '.98rem', lineHeight: 1.6, fontWeight: 500 }}>
                   {score < 70 

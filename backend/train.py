@@ -23,15 +23,17 @@ POWER_VERBS = [
     "led", "built", "designed", "developed", "increased", "reduced",
     "managed", "deployed", "optimised", "delivered", "launched", "scaled",
     "architected", "automated", "improved", "created", "implemented",
-    "negotiated", "mentored", "collaborated",
+    "negotiated", "mentored", "collaborated", "spearheaded", "engineered",
+    "revitalized", "orchestrated", "pioneered", "standardized", "accelerated",
+    "transformed", "integrated", "innovated", "cultivated", "leveraged",
 ]
 
 SECTION_KEYWORDS = {
-    "education": ["education", "university", "college", "bachelor", "master", "degree", "phd"],
-    "experience": ["experience", "employment", "work history", "professional"],
-    "skills":    ["skills", "technologies", "tools", "competencies", "proficiencies"],
-    "projects":  ["projects", "portfolio", "github"],
-    "summary":   ["summary", "objective", "profile"],
+    "education": ["education", "university", "college", "bachelor", "master", "degree", "phd", "academic", "scholar"],
+    "experience": ["experience", "employment", "work history", "professional history", "background", "tenure", "projects"],
+    "skills":    ["skills", "technologies", "tools", "competencies", "proficiencies", "stack", "expertise"],
+    "projects":  ["projects", "portfolio", "github", "open source", "labs"],
+    "summary":   ["summary", "objective", "profile", "about me", "overview"],
 }
 
 
@@ -64,7 +66,13 @@ def extract_features(text: str) -> dict:
     features["has_github"]   = int("github" in lower)
 
     # — Tech keywords (broad set)
-    tech_words = ["python","javascript","react","node","aws","sql","docker","kubernetes","git","api","machine learning","tensorflow","pytorch","java","c++","typescript","golang","rust","mongodb","postgresql"]
+    tech_words = [
+        "python","javascript","react","node","aws","sql","docker","kubernetes","git","api",
+        "machine learning","tensorflow","pytorch","java","typescript","golang","rust",
+        "mongodb","postgresql","c++","next.js","tailwind","gcp","snowflake","azure",
+        "terraform","graphql","redis","elasticsearch","jenkins","linux","flask","django",
+        "fastapi","vue","angular","spark","hadoop","data science","devops","cicd"
+    ]
     features["tech_keyword_count"] = sum(1 for t in tech_words if t in lower)
 
     # — Years of experience heuristic
@@ -72,12 +80,19 @@ def extract_features(text: str) -> dict:
     features["yoe_max"] = max([int(y) for y in years], default=0)
 
     # — Date range estimation
-    date_pairs = re.findall(r'(20\d{2})\s*(?:-|to|–)\s*(20\d{2}|present|current)', lower)
+    # Enhanced date range detection
+    date_pairs = re.findall(r'((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)?\s*\d{4})\s*(?:-|to|–|until)\s*(\d{4}|present|current|now)', lower)
     total = 0
-    for s, e in date_pairs:
-        end = 2026 if e in ["present","current"] else int(e)
-        total += max(0, end - int(s))
-    features["date_range_years"] = min(total, 20)
+    for s_str, e_str in date_pairs:
+        try:
+            s_match = re.search(r'\d{4}', s_str)
+            e_match = re.search(r'\d{4}', e_str)
+            s_year = int(s_match.group()) if s_match else 0
+            e_year = 2026 if e_str in ["present","current","now"] else (int(e_match.group()) if e_match else 0)
+            if s_year > 1950 and e_year >= s_year:
+                total += (e_year - s_year)
+        except: continue
+    features["date_range_years"] = min(total, 25)
 
     return features
 
@@ -104,7 +119,7 @@ FEATURE_ORDER = [
 # -----------------------------------------------------------------
 # 2.  Synthetic dataset generator
 # -----------------------------------------------------------------
-def synthesise_dataset(n=3000, seed=42):
+def synthesise_dataset(n=5000, seed=42):
     rng = np.random.default_rng(seed)
     X, y = [], []
 
@@ -115,43 +130,43 @@ def synthesise_dataset(n=3000, seed=42):
             "has_skills":         rng.integers(0, 2),
             "has_projects":       rng.integers(0, 2),
             "has_summary":        rng.integers(0, 2),
-            "word_count":         int(rng.integers(50, 1200)),
+            "word_count":         int(rng.integers(50, 1500)),
             "too_short":          0,
             "too_long":           0,
-            "power_verb_count":   int(rng.integers(0, 20)),
-            "metric_count":       int(rng.integers(0, 30)),
+            "power_verb_count":   int(rng.integers(0, 30)),
+            "metric_count":       int(rng.integers(0, 40)),
             "has_email":          rng.integers(0, 2),
             "has_phone":          rng.integers(0, 2),
             "has_linkedin":       rng.integers(0, 2),
             "has_github":         rng.integers(0, 2),
-            "tech_keyword_count": int(rng.integers(0, 15)),
-            "yoe_max":            int(rng.integers(0, 12)),
-            "date_range_years":   int(rng.integers(0, 12)),
+            "tech_keyword_count": int(rng.integers(0, 25)),
+            "yoe_max":            int(rng.integers(0, 15)),
+            "date_range_years":   int(rng.integers(0, 15)),
         }
         f["too_short"] = int(f["word_count"] < 150)
         f["too_long"]  = int(f["word_count"] > 1400)
 
-        # Build a score with weighted signal
+        # Build a score with refined weighted signal
         score = (
-            f["has_education"]       * 8  +
-            f["has_experience"]      * 14 +
-            f["has_skills"]          * 8  +
-            f["has_projects"]        * 5  +
+            f["has_education"]       * 10 +
+            f["has_experience"]      * 18 + # Experience is king
+            f["has_skills"]          * 10 +
+            f["has_projects"]        * 6  +
             f["has_summary"]         * 4  +
-            min(f["word_count"] / 12, 10) +
-            f["power_verb_count"]    * 1.2 +
-            f["metric_count"]        * 0.8 +
-            f["has_email"]           * 4  +
-            f["has_phone"]           * 3  +
+            min(f["word_count"] / 10, 12) +
+            f["power_verb_count"]    * 1.5 + # High impact verbs
+            f["metric_count"]        * 1.2 + # High impact metrics
+            f["has_email"]           * 5  +
+            f["has_phone"]           * 4  +
             f["has_linkedin"]        * 3  +
             f["has_github"]          * 2  +
-            f["tech_keyword_count"]  * 1.5 +
-            f["yoe_max"]             * 1.0 +
-            f["date_range_years"]    * 0.5 +
-            -f["too_short"]          * 15 +
-            -f["too_long"]           * 5
+            f["tech_keyword_count"]  * 2.0 + # Skills are important
+            f["yoe_max"]             * 1.5 +
+            f["date_range_years"]    * 0.8 +
+            -f["too_short"]          * 25 + # Major penalty for being too short
+            -f["too_long"]           * 10
         )
-        score = np.clip(score + rng.normal(0, 5), 10, 100)
+        score = np.clip(score + rng.normal(0, 4), 10, 100)
 
         X.append([f[k] for k in FEATURE_ORDER])
         y.append(round(float(score), 1))
@@ -163,8 +178,8 @@ def synthesise_dataset(n=3000, seed=42):
 # 3.  Train & save
 # -----------------------------------------------------------------
 if __name__ == "__main__":
-    print("📦 Generating synthetic training data (3000 resumes)…")
-    X, y = synthesise_dataset(3000)
+    print("📦 Generating synthetic training data (5000 resumes)…")
+    X, y = synthesise_dataset(5000)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     print("🧠 Training Gradient Boosting model…")
