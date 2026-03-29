@@ -17,7 +17,7 @@ const STEPS = [
 ];
 
 // Custom ML backend — runs alongside the frontend (npm run dev + ./backend/start.sh)
-const ML_BACKEND = 'http://localhost:8000';
+const ML_BACKEND = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
   const [file,     setFile]     = useState(null);

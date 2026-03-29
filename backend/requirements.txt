@@ -5,3 +5,5 @@ spacy
 pdfplumber
 pydantic
 python-multipart
+gunicorn
+numpy
