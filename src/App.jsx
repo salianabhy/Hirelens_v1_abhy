@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import Navbar    from './components/Navbar';
 import AuthModal from './components/AuthModal';
@@ -104,7 +104,8 @@ const App = () => {
   const login = u => {
     setUser(u);
     setShowAuth(false);
-    if (u) checkOnboarding(u.uid);
+    // Don't auto-redirect if we are looking at results — let the user finish reading
+    if (u && page !== 'results') checkOnboarding(u.uid);
   };
 
   const handleLogout = async () => {
@@ -154,7 +155,7 @@ const App = () => {
           email: firebaseUser.email
         };
         setUser(u);
-        // If we are on landing and just logged in, check where to go
+        // On conversion/login, if on landing, check onboarding
         if (page === 'landing') {
           checkOnboarding(firebaseUser.uid);
         }
@@ -163,7 +164,35 @@ const App = () => {
       }
     });
     return () => unsub();
-  }, []);
+  }, [page]); // Re-subscribe if page changes during auth transition
+
+  // Conversion Sync: Save guest scan to user account upon sign-in
+  useEffect(() => {
+    if (user && results && !results.is_persisted) {
+      const persistScan = async () => {
+        try {
+          const scanId = `scan_${Date.now()}`;
+          const scanRef = doc(db, 'users', user.uid, 'scans', scanId);
+          
+          await setDoc(scanRef, {
+            ...results,
+            id: scanId,
+            userId: user.uid,
+            timestamp: new Date().toISOString(),
+          });
+          
+          // Mark as persisted locally to avoid double-write
+          const updatedResults = { ...results, is_persisted: true };
+          setResults(updatedResults);
+          
+          showToast("Resume report saved to your profile! 💎", "success");
+        } catch (e) {
+          console.error("Conversion sync failed:", e);
+        }
+      };
+      persistScan();
+    }
+  }, [user, results]);
 
   const openAuth = () => setShowAuth(true);
 
