@@ -101,8 +101,11 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
     // ── Attempt 2: Groq LLM fallback ──────────────────────────────────────
     const prompt = `
       You are an expert ATS and senior technical recruiter.
-      Your FIRST task is to determine if the following text is actually a professional resume or curriculum vitae.
-      If the text is NOT a resume (e.g. it is a class assignment, a random image caption, a letter, or unrelated text), you MUST return a score of 5 and state "INVALID DOCUMENT" in the improvements.
+      Your FIRST task is to determine if the following text is a professional resume, CV, or career profile.
+      Valid resumes usually contain sections like Experience, Education, Skills, or contact details.
+      
+      If the text is clearly NOT a resume (e.g. a class assignment, a recipe, a story, or a random image caption), return a score of 5.
+      If the text is a resume but seems poorly structured or very thin, evaluate it normally but keep the score low.
 
       Evaluate the following text against the target role: ${targetRole || 'General/Unspecified'}.
       Resume Text: ${truncatedText}

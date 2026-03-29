@@ -107,20 +107,29 @@ def _spacy_impact(text: str) -> float:
 # -------------------------------------------------------
 def _is_resume(text: str) -> bool:
     lower = text.lower()
-    # A resume must have at least some professional markers
+    # Expanded professional markers
     professional_markers = [
         "experience", "work", "education", "skills", "projects", "summary",
-        "objective", "university", "college", "employment", "achievements"
+        "objective", "university", "college", "employment", "achievements",
+        "history", "background", "awards", "certification", "profile", "contact"
     ]
     found = sum(1 for m in professional_markers if m in lower)
-    # If less than 2 major markers, it's likely not a resume
-    if found < 2: return False
     
-    # Check for name/contact-like patterns (very basic)
-    has_contact = bool(re.search(r'[\w.-]+@[\w.-]+\.\w+', text)) or bool(re.search(r'(\+?\d[\d\s\-\(\)]{8,}\d)', text))
-    if not has_contact and found < 4: return False
+    # Check for name/contact-like patterns
+    has_email = bool(re.search(r'[\w.-]+@[\w.-]+\.\w+', text))
+    has_phone = bool(re.search(r'(\+?\d[\d\s\-\(\)]{8,}\d)', text))
+    has_contact = has_email or has_phone
     
-    return True
+    print(f"DEBUG: Found {found} markers, Has contact: {has_contact}")
+    
+    # Validation logic:
+    # 1. If we find at least 3 markers, it's likely a resume even without a clear email/phone (e.g. just a LinkedIn link)
+    if found >= 3: return True
+    # 2. If we find 1-2 markers AND contact info, it's likely a resume
+    if found >= 1 and has_contact: return True
+    
+    # Otherwise, it might be a random document
+    return False
 
 DEFAULT_JD = ("software engineer developer python javascript react node aws cloud "
               "frontend backend machine learning data sql agile leadership communication "
