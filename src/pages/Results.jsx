@@ -31,6 +31,7 @@ const LockOverlay = ({ title, sub, action, label, features = [] }) => (
 );
 
 const Results = ({ go, user, onAuth, data }) => {
+  const [showPromo, setShowPromo] = useState(false);
   const [animated, setAnimated] = useState(false);
   
   const score = data?.score || 46;
@@ -68,11 +69,38 @@ const Results = ({ go, user, onAuth, data }) => {
     };
     return solutions[label] || 'Expert Tip: Use the STAR method (Situation, Task, Action, Result) to fix this signal.';
   };
-
+  
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 300);
-    return () => clearTimeout(t);
-  }, []);
+    
+    // 20-second Promotion Modal Timer for logged-in users
+    let promoTimer;
+    if (user) {
+      promoTimer = setTimeout(() => setShowPromo(true), 20000);
+    }
+
+    return () => {
+      clearTimeout(t);
+      if (promoTimer) clearTimeout(promoTimer);
+    };
+  }, [user]);
+
+  const PromoModal = () => (
+    <div className="rf" style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} onClick={() => setShowPromo(false)} />
+      <div className="card ru glass" style={{ position: 'relative', width: '100%', maxWidth: 400, padding: 40, textAlign: 'center', borderRadius: 32, border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 32px 80px rgba(0,0,0,0.2)' }}>
+         <div style={{ width: 64, height: 64, borderRadius: 22, background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid var(--bl)' }}>
+            <Icon id="award" size={28} color="var(--ind)" />
+         </div>
+         <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 12, letterSpacing: '-.04em', color: 'var(--tp)' }}>Unlock Full Analysis</h2>
+         <p style={{ color: 'var(--ts)', fontSize: '.95rem', lineHeight: 1.6, marginBottom: 32, fontWeight: 500 }}>For a comprehensive analysis and to avail all premium features like the AI Career Coach, go to your dashboard.</p>
+         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Btn v="dark" full sz="lg" pill onClick={() => go('dashboard')}>Go to Dashboard</Btn>
+            <Btn v="ghost" full sz="md" pill onClick={() => setShowPromo(false)}>Cancel</Btn>
+         </div>
+      </div>
+    </div>
+  );
 
   const signalFallbacks = {
     action_verbs: ['Architected', 'Deployed', 'Optimized', 'Led'],
@@ -307,7 +335,7 @@ const Results = ({ go, user, onAuth, data }) => {
             {user ? 'Military-grade encryption active • Secure PDF parsing' : 'Quick sign-in available • No credit card required'}
           </p>
         </div>
-
+        {showPromo && <PromoModal />}
       </div>
     </div>
   );
