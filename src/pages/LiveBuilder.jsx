@@ -21,6 +21,7 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
   const [loadingAI, setLoadingAI] = useState(false);
   const [auditData, setAuditData] = useState(null);
   const [loadingAudit, setLoadingAudit] = useState(false);
+  const [lastAuditData, setLastAuditData] = useState('');
 
   // Sync data up to App.jsx whenever it changes so Portfolio Maker stays in sync
   useEffect(() => {
@@ -139,7 +140,7 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
     try {
       const prompt = `Rewrite the following resume textual bullet point to make it highly professional, impact-driven, and ATS-friendly. Use strong action verbs and metrics if possible. Limit to one sentence.
       Original Text: "${currentText}"`;
-      const completion = await callGroq(prompt);
+      const completion = await callGroq(prompt, { temperature: 0 });
 
 
       const improved = completion.choices[0]?.message?.content?.replace(/^"|"$|^\*|\*$/g, '').trim() || currentText;
@@ -200,7 +201,7 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       
       Return ONLY the updated JSON in the EXACT same schema.`;
       
-      const completion = await callGroq(prompt, { json: true });
+      const completion = await callGroq(prompt, { json: true, temperature: 0 });
       const overhauled = cleanJsonResponse(completion.choices[0]?.message?.content);
       
       if (overhauled) {
@@ -218,11 +219,14 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
 
   const runNeuralAudit = async () => {
     if (loadingAudit) return;
+    const currentDataStr = JSON.stringify(data);
+    if (currentDataStr === lastAuditData) return; // Skip if no changes
+
     setLoadingAudit(true);
     try {
       const auditPrompt = `Analyze this resume JSON for a high-priority ATS audit. 
       Provide accurate scores and categorical reasoning. 
-      JSON Data: ${JSON.stringify(data)}
+      JSON Data: ${currentDataStr}
       
       Return JSON Schema:
       {
@@ -239,9 +243,12 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
         "verdict": "Market Ready | Specific Fixes Needed | Structural Gap"
       }`;
 
-      const completion = await callGroq(auditPrompt, { json: true });
+      const completion = await callGroq(auditPrompt, { json: true, temperature: 0 });
       const result = cleanJsonResponse(completion.choices[0]?.message?.content);
-      if (result) setAuditData(result);
+      if (result) {
+        setAuditData(result);
+        setLastAuditData(currentDataStr);
+      }
     } catch (err) {
       console.error(err);
     }
