@@ -19,6 +19,8 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
   const [showATS, setShowATS] = useState(false);
   const [jdBuffer, setJdBuffer] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
+  const [auditData, setAuditData] = useState(null);
+  const [loadingAudit, setLoadingAudit] = useState(false);
 
   // Sync data up to App.jsx whenever it changes so Portfolio Maker stays in sync
   useEffect(() => {
@@ -164,7 +166,6 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       JD / Internship Description: "${jdBuffer}"`;
       const completion = await callGroq(prompt);
 
-
       const extracted = completion.choices[0]?.message?.content?.split(',').map(s => s.trim()) || [];
       if (extracted.length > 0) {
          const current = data.skills.split('|').map(s => s.trim());
@@ -179,6 +180,72 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       alert("Failed to connect to Groq AI");
     }
     setLoadingAI(false);
+  };
+
+  const strategicOverhaul = async () => {
+    if (!jdBuffer.trim() || loadingAI) return;
+    setLoadingAI(true);
+    try {
+      const prompt = `You are a world-class career strategist. I will provide a user's current resume data and a target Job Description. 
+      Your mission is to REWRITE and RESTRUCTURE the entire resume JSON to perfectly align with this specific role.
+      
+      CRITICAL INSTRUCTIONS:
+      1. Every experience bullet point MUST be rewritten to highlight relevant skills from the JD using the STAR method.
+      2. Include specific metrics and strong action verbs.
+      3. The summary must be a high-impact "hook" for this role.
+      4. Do NOT hallucinate data; only restructure and refine existing information.
+      
+      Current Resume JSON: ${JSON.stringify(data)}
+      Target JD: "${jdBuffer}"
+      
+      Return ONLY the updated JSON in the EXACT same schema.`;
+      
+      const completion = await callGroq(prompt, { json: true });
+      const overhauled = cleanJsonResponse(completion.choices[0]?.message?.content);
+      
+      if (overhauled) {
+        setData(overhauled);
+        alert("Strategic Alignment Complete! 🚀 Your resume has been overhauled for this role.");
+        setJdBuffer('');
+        setActiveLayer('experience');
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Strategic Overhaul failed. Please try a shorter JD.");
+    }
+    setLoadingAI(false);
+  };
+
+  const runNeuralAudit = async () => {
+    if (loadingAudit) return;
+    setLoadingAudit(true);
+    try {
+      const auditPrompt = `Analyze this resume JSON for a high-priority ATS audit. 
+      Provide accurate scores and categorical reasoning. 
+      JSON Data: ${JSON.stringify(data)}
+      
+      Return JSON Schema:
+      {
+        "atsScore": 0-100,
+        "impactScore": 0-100,
+        "keywordScore": 0-100,
+        "rejectionProb": 0-100,
+        "reasoning": [
+          {"type": "ATS Formatting", "score": 80, "note": "Reason..."},
+          {"type": "Impact", "score": 70, "note": "Reason..."},
+          {"type": "Keywords", "score": 60, "note": "Reason..."}
+        ],
+        "riskLevel": "Low | Moderate | High",
+        "verdict": "Market Ready | Specific Fixes Needed | Structural Gap"
+      }`;
+
+      const completion = await callGroq(auditPrompt, { json: true });
+      const result = cleanJsonResponse(completion.choices[0]?.message?.content);
+      if (result) setAuditData(result);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoadingAudit(false);
   };
 
   const downloadPDF = () => {
@@ -415,10 +482,13 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
            {activeLayer === 'personal' && (
              <div className="rf">
                <div className="rb-form-full" style={{ marginBottom: 24 }}>
-                  <label className="rb-label">Auto-Optimize with Job / Internship Description</label>
+                  <label className="rb-label">Neural Alignment (Job / Internship Description)</label>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <textarea className="inp" value={jdBuffer} onChange={e => setJdBuffer(e.target.value)} placeholder="Paste Job or Internship Description here to auto-align skills..." style={{ height: 60, fontSize: '.8rem' }} />
-                    <Btn v="ind" sz="sm" pill onClick={autoOptimize} disabled={!jdBuffer.trim()}><Icon id="zap" size={12} color="white" /> Optimize</Btn>
+                    <textarea className="inp" value={jdBuffer} onChange={e => setJdBuffer(e.target.value)} placeholder="Paste Job or Internship Description here..." style={{ height: 60, fontSize: '.8rem' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <Btn v="ind" sz="xs" pill onClick={autoOptimize} disabled={!jdBuffer.trim() || loadingAI}><Icon id="zap" size={10} color="white" /> Add Skills</Btn>
+                      <Btn v="dark" sz="xs" pill onClick={strategicOverhaul} disabled={!jdBuffer.trim() || loadingAI}><Icon id="target" size={10} color="white" /> Strategic Overhaul</Btn>
+                    </div>
                   </div>
                </div>
                <div className="rb-form-row">
@@ -582,34 +652,46 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
              const hasActionVerbs = /\b(spearheaded|engineered|architected|optimized|orchestrated|launched|led|built|designed|delivered|reduced|increased|improved|drove|managed|developed|automated|scaled|created|deployed)\b/i.test(totalDesc);
              const hasSummary = (data.summary || '').length > 40;
              const hasSkills = (data.skills || '').split('|').filter(s => s.trim()).length >= 4;
-             const atsScore = Math.min(100, 60 + (hasMetrics ? 12 : 0) + (hasActionVerbs ? 10 : 0) + (hasSummary ? 10 : 0) + (hasSkills ? 8 : 0));
-             const impactScore = Math.min(100, 30 + (hasMetrics ? 40 : 0) + (hasActionVerbs ? 20 : 0) + (exps.length > 1 ? 10 : 0));
-             const keywordScore = hasSkills ? Math.min(95, 60 + data.skills.split('|').filter(s => s.trim()).length * 5) : 40;
-             const rejectionPct = Math.max(5, 100 - Math.round((atsScore + impactScore + keywordScore) / 3));
+             
+             // Initial heuristic score
+             const atsScore = auditData?.atsScore || Math.min(100, 60 + (hasMetrics ? 12 : 0) + (hasActionVerbs ? 10 : 0) + (hasSummary ? 10 : 0) + (hasSkills ? 8 : 0));
+             const impactScore = auditData?.impactScore || Math.min(100, 30 + (hasMetrics ? 40 : 0) + (hasActionVerbs ? 20 : 0) + (exps.length > 1 ? 10 : 0));
+             const keywordScore = auditData?.keywordScore || Math.min(95, 60 + data.skills.split('|').filter(s => s.trim()).length * 5);
+             const rejectionPct = auditData?.rejectionProb ?? Math.max(5, 100 - Math.round((atsScore + impactScore + keywordScore) / 3));
+
              return (
                <div className="rf" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  <div className="card-tint" style={{ padding: 24, borderLeft: `4px solid ${rejectionPct > 50 ? 'var(--red)' : rejectionPct > 25 ? 'var(--amber)' : 'var(--green)'}`, background: rejectionPct > 50 ? 'rgba(255,59,48,.04)' : 'rgba(52,199,89,.04)' }}>
+                  <div className="card-tint" style={{ padding: 24, borderLeft: `5px solid ${rejectionPct > 40 ? 'var(--red)' : rejectionPct > 20 ? 'var(--amber)' : 'var(--green)'}`, background: rejectionPct > 40 ? 'rgba(255,59,48,.04)' : 'rgba(52,199,89,.04)' }}>
                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <h4 style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', color: rejectionPct > 50 ? 'var(--red)' : rejectionPct > 25 ? 'var(--amber)' : 'var(--green)', letterSpacing: '.05em' }}>Rejection Probability</h4>
-                        <Badge type={rejectionPct > 50 ? 'red' : rejectionPct > 25 ? 'amber' : 'green'}>Live AI Score</Badge>
+                        <div>
+                          <h4 style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', color: rejectionPct > 40 ? 'var(--red)' : rejectionPct > 20 ? 'var(--amber)' : 'var(--green)', letterSpacing: '.05em', marginBottom: 4 }}>Neural Analysis Index</h4>
+                          <p style={{ fontSize: '.65rem', color: 'var(--ts)', fontWeight: 600 }}>{auditData ? 'High Fidelity Audit Active' : 'Heuristic Scan Active'}</p>
+                        </div>
+                        <Btn v="ind" sz="xs" pill onClick={runNeuralAudit} disabled={loadingAudit}>
+                          {loadingAudit ? 'Auditing...' : <><Icon id="zap" size={10} color="white" /> Run Full AI Audit</>}
+                        </Btn>
                      </div>
-                     <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-.05em', marginBottom: 8, color: rejectionPct > 50 ? 'var(--red)' : rejectionPct > 25 ? 'var(--amber)' : 'var(--green)' }}>{rejectionPct}%</div>
-                     <p style={{ fontSize: '.84rem', color: 'var(--ts)', lineHeight: 1.5 }}>
-                       {rejectionPct > 50 ? 'High Risk: Add metrics, action verbs, and a stronger summary to pass ATS filters.' : rejectionPct > 25 ? 'Moderate Risk: Use the ⚡ buttons to further strengthen your bullets.' : 'Low Risk: Excellent depth. Your profile is ATS market-ready!'}
+                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                        <span style={{ fontSize: '2.8rem', fontWeight: 950, letterSpacing: '-.06em', color: rejectionPct > 40 ? 'var(--red)' : rejectionPct > 20 ? 'var(--amber)' : 'var(--green)' }}>{rejectionPct}%</span>
+                        <span style={{ fontSize: '.85rem', fontWeight: 700, color: 'var(--ts)' }}>Rejection Risk</span>
+                     </div>
+                     <p style={{ fontSize: '.84rem', color: 'var(--ts)', lineHeight: 1.5, fontWeight: 500 }}>
+                       {auditData?.verdict || (rejectionPct > 40 ? 'High Risk: Add metrics, action verbs, and a stronger summary to pass ATS filters.' : 'Market Optimized: Your profile is currently aligned with hiring standards.')}
                      </p>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                     <h4 className="eyebrow">Live Score Reasoning</h4>
-                     {[
-                       { l: 'ATS Formatting', s: atsScore, r: atsScore > 80 ? 'Standard structure detected — good.' : 'Improve summary and add more structured content.' },
-                       { l: 'Impact Language', s: impactScore, r: impactScore > 70 ? 'Strong action verbs and metrics detected.' : 'Use ⚡ to rewrite bullets with metrics and power verbs.' },
-                       { l: 'Keyword Density', s: keywordScore, r: keywordScore > 70 ? 'Sufficient skills detected.' : 'Add more technical keywords to the Skills section.' }
-                     ].map(res => (
-                       <div key={res.l} className="card" style={{ padding: 16 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ fontWeight: 800, fontSize: '.85rem' }}>{res.l}</span><span style={{ fontWeight: 800, color: res.s > 70 ? 'var(--green)' : res.s > 50 ? 'var(--amber)' : 'var(--red)' }}>{res.s}%</span></div>
-                          <div style={{ height: 4, background: 'var(--s2)', borderRadius: 4, marginTop: 6, marginBottom: 8 }}><div style={{ height: '100%', width: `${res.s}%`, borderRadius: 4, background: res.s > 70 ? 'var(--green)' : res.s > 50 ? 'var(--amber)' : 'var(--red)', transition: 'width .6s ease' }} /></div>
-                          <p style={{ fontSize: '.78rem', color: 'var(--ts)' }}>{res.r}</p>
-                       </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                     <h4 className="eyebrow">Diagnostic Breakdown</h4>
+                     {(auditData?.reasoning || [
+                        { type: 'ATS Formatting', score: atsScore, note: atsScore > 80 ? 'Standard structure detected — good.' : 'Improve summary and add more structured content.' },
+                        { type: 'Impact Language', score: impactScore, note: impactScore > 70 ? 'Strong action verbs and metrics detected.' : 'Use ⚡ to rewrite bullets with metrics and power verbs.' },
+                        { type: 'Keyword Density', score: keywordScore, note: keywordScore > 70 ? 'Sufficient skills detected.' : 'Add more technical keywords to the Skills section.' }
+                     ]).map(res => (
+                        <div key={res.type} className="card" style={{ padding: 20, border: '1px solid var(--bl)' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}><span style={{ fontWeight: 800, fontSize: '.9rem' }}>{res.type}</span><span style={{ fontWeight: 800, color: res.score > 70 ? 'var(--green)' : res.score > 40 ? 'var(--amber)' : 'var(--red)', fontSize: '1.1rem' }}>{res.score}%</span></div>
+                           <div style={{ height: 6, background: 'var(--s1)', borderRadius: 100, marginBottom: 12 }}><div style={{ height: '100%', width: `${res.score}%`, borderRadius: 100, background: res.score > 70 ? 'var(--green)' : res.score > 40 ? 'var(--amber)' : 'var(--red)', transition: 'width 1s cubic-bezier(.22,1,.36,1)' }} /></div>
+                           <p style={{ fontSize: '.82rem', color: 'var(--ts)', lineHeight: 1.4, fontWeight: 500 }}>{res.note}</p>
+                        </div>
                      ))}
                   </div>
                </div>

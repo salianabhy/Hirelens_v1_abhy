@@ -73,10 +73,10 @@ const Results = ({ go, user, onAuth, data }) => {
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 300);
     
-    // 20-second Promotion Modal Timer for logged-in users
+    // 15-second Promotion Modal Timer for logged-in users
     let promoTimer;
     if (user) {
-      promoTimer = setTimeout(() => setShowPromo(true), 20000);
+      promoTimer = setTimeout(() => setShowPromo(true), 15000);
     }
 
     return () => {
