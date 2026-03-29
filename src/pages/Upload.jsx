@@ -208,24 +208,7 @@ const Upload = ({ go, user, onAuth, setResults, onNotify }) => {
     }, 550);
   };
 
-  if (!user) return (
-    <div style={{ minHeight: '100vh', paddingTop: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s1)', padding: '80px 20px' }}>
-      <div style={{ textAlign: 'center', maxWidth: 340 }}>
-        <div style={{ width: 54, height: 54, borderRadius: 17, background: 'var(--s2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <Icon id="lock" size={22} color="var(--tt)" />
-        </div>
-        <h2 style={{ fontSize: '1.7rem', fontWeight: 700, letterSpacing: '-.04em', marginBottom: 12 }}>
-          Sign in to analyze
-        </h2>
-        <p style={{ color: 'var(--tt)', marginBottom: 28, fontSize: '.9rem', lineHeight: 1.65 }}>
-          Create an account to save your scan history and see your resume metrics.
-        </p>
-        <Btn v="dark" sz="lg" pill onClick={onAuth}>
-          Sign in <Icon id="arrow" size={14} color="white" />
-        </Btn>
-      </div>
-    </div>
-  );
+  // Auth check removed to allow guest uploads as per modern SaaS 'Try-Before-You-Buy' patterns
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 16px' }}>

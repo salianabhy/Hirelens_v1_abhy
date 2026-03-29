@@ -5,15 +5,27 @@ import Badge from '../components/Badge';
 import ScoreRing from '../components/ScoreRing';
 import ProgressRow from '../components/ProgressRow';
 
-const LockOverlay = ({ title, sub, action, label }) => (
-  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--r3)', padding: 16 }}>
-    <div style={{ background: 'var(--s0)', border: '.5px solid var(--bm)', borderRadius: 18, padding: '24px 28px', textAlign: 'center', boxShadow: '0 12px 36px rgba(0,0,0,.1)', maxWidth: 280 }}>
-      <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 13px' }}>
-        <Icon id="lock" size={17} color="var(--ts)" />
+const LockOverlay = ({ title, sub, action, label, features = [] }) => (
+  <div style={{ position: 'absolute', inset: -1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'inherit', padding: 16, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 10 }}>
+    <div style={{ background: '#fff', border: '1.5px solid var(--bl)', borderRadius: 24, padding: '32px 36px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,.08)', maxWidth: 320 }}>
+      <div style={{ width: 44, height: 44, borderRadius: 14, background: 'var(--s1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <Icon id="lock" size={20} color="var(--ind)" />
       </div>
-      <p style={{ fontWeight: 700, marginBottom: 4, fontSize: '.92rem', letterSpacing: '-.03em' }}>{title}</p>
-      <p style={{ fontSize: '.82rem', color: 'var(--ts)', marginBottom: 16 }}>{sub}</p>
-      <Btn v="dark" sz="sm" pill onClick={action}>{label}</Btn>
+      <p style={{ fontWeight: 900, marginBottom: 8, fontSize: '1.1rem', letterSpacing: '-.03em', color: 'var(--near-black)' }}>{title}</p>
+      <p style={{ fontSize: '.88rem', color: 'var(--ts)', marginBottom: 20, lineHeight: 1.5 }}>{sub}</p>
+      
+      {features.length > 0 && (
+        <div style={{ textAlign: 'left', marginBottom: 24, padding: '12px 16px', background: 'var(--s1)', borderRadius: 12 }}>
+          {features.map((f, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: i < features.length - 1 ? 8 : 0 }}>
+              <Icon id="check" size={12} color="var(--green)" />
+              <span style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--tp)' }}>{f}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <Btn v="dark" sz="lg" pill full onClick={action}>{label}</Btn>
     </div>
   </div>
 );
@@ -126,7 +138,7 @@ const Results = ({ go, user, onAuth, data }) => {
           </div>
 
           {/* Benchmark Matrix */}
-          <div className="ru d2 card" style={{ padding: '36px 32px', background: '#fff' }}>
+          <div className="ru d2 card" style={{ padding: '36px 32px', background: '#fff', position: 'relative' }}>
             <h4 style={{ fontSize: '.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--tt)', letterSpacing: '.14em', marginBottom: 32 }}>Capability Matrix</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
               {breakdown.map((b, i) => (
@@ -141,11 +153,19 @@ const Results = ({ go, user, onAuth, data }) => {
                 </div>
               ))}
             </div>
+            {!user && (
+              <LockOverlay 
+                title="Capability Locked" 
+                sub="Sign in to view your detailed metric breakdown"
+                action={onAuth}
+                label="Unlock Now"
+              />
+            )}
           </div>
         </div>
 
         {/* Signal Intelligence */}
-        <div className="ru d3 card" style={{ padding: 40, marginBottom: 24, background: '#fff', border: '1px solid var(--bl)' }}>
+        <div className="ru d3 card" style={{ padding: 40, marginBottom: 24, background: '#fff', border: '1px solid var(--bl)', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 36, height: 36, borderRadius: 12, background: 'var(--near-black)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -176,18 +196,27 @@ const Results = ({ go, user, onAuth, data }) => {
           <p style={{ marginTop: 24, fontSize: '.85rem', color: 'var(--ts)', fontWeight: 500, lineHeight: 1.6, maxWidth: 640 }}>
             Our neural engine extracted these high-weight tokens from your document to validate against global hiring standards.
           </p>
+          {!user && (
+            <LockOverlay 
+              title="Neural Signals Locked" 
+              sub="Unlock the full spectrum of hiring intelligence"
+              action={onAuth}
+              label="Unlock Signals"
+              features={['Action Verb Impact Analysis', 'Technical Keyword Matching', 'Quantifiable Metric Extraction']}
+            />
+          )}
         </div>
 
         {/* Detailed Insights */}
         <div className="insights-grid" style={{ display: 'grid', gap: 24, marginBottom: 48 }}>
           
           {/* Critical Issues */}
-          <div className="ru d4 card" style={{ padding: 36, position: 'relative', background: '#fff' }}>
+          <div className="ru d4 card" style={{ padding: 36, position: 'relative', background: '#fff', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--tp)', letterSpacing: '-.02em' }}>Optimization Needed</h4>
               <Badge type="red">{issues.length || 3} Critical Items</Badge>
             </div>
-            <div className={user ? '' : 'locked'}>
+            <div>
               {(issues.length ? issues : [
                 { label: 'Keyword Optimization', desc: 'Missing high-impact technical keywords found in similar roles.', sev: 'Critical' },
                 { label: 'Quantifiable Metrics', desc: 'Achievement data is currently descriptive. ATS systems prefer numeric proof.', sev: 'Critical' },
@@ -205,20 +234,21 @@ const Results = ({ go, user, onAuth, data }) => {
             {!user && (
               <LockOverlay
                 title="Protocol Locked"
-                sub="Sign in to view critical ATS failures"
+                sub="Sign in to view critical ATS failures and fixes"
                 action={onAuth}
-                label="Sign In"
+                label="Unlock Analysis"
+                features={['Detailed ATS Structural Audit', 'Keyword Density Analysis', 'Visual Hierarchy Scoring']}
               />
             )}
           </div>
 
           {/* Recommendations */}
-          <div className="ru d5 card" style={{ padding: 36, position: 'relative', background: '#fff' }}>
+          <div className="ru d5 card" style={{ padding: 36, position: 'relative', background: '#fff', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--tp)', letterSpacing: '-.02em' }}>Actionable Improvements</h4>
               <Badge type="ind">AI Coach Expert</Badge>
             </div>
-            <div className={user ? '' : 'locked'}>
+            <div>
               {[
                 "Tailor your language. Incorporate exact keywords from your target job description.",
                 ...(improvements.length ? improvements : ["Add specific metrics", "Use stronger action verbs"])
@@ -233,10 +263,11 @@ const Results = ({ go, user, onAuth, data }) => {
             </div>
             {!user && (
               <LockOverlay
-                title="AI Support Required"
-                sub="Unlock personalized career coaching"
-                action={() => go('pricing')}
-                label="Upgrade to Pro"
+                title="Experience Locked"
+                sub="Unlock personalized coaching & growth tools"
+                action={onAuth}
+                label="Unlock Career OS"
+                features={['Personal AI Career Coach', 'STAR-method Interview Prep', 'Strategic Job Matcher', 'Expert AI Resume Builder']}
               />
             )}
           </div>
@@ -246,18 +277,20 @@ const Results = ({ go, user, onAuth, data }) => {
         <div className="ru d6" style={{ background: 'var(--near-black)', borderRadius: 32, padding: '56px 48px', position: 'relative', overflow: 'hidden', textAlign: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, rgba(94,92,230,0.12), transparent)', pointerEvents: 'none' }} />
           <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-.06em', marginBottom: 18, position: 'relative', lineHeight: 1 }}>
-            Finalize Your Profile.
+            {user ? 'Finalize Your Profile.' : 'Unlock the Full Report.'}
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '1.1rem', lineHeight: 1.6, maxWidth: 520, margin: '0 auto 36px', position: 'relative', fontWeight: 500 }}>
-            Your analysis is saved. Visit the dashboard to track your benchmarks, access the AI coach, and generate a tailored cover letter.
+            {user 
+              ? 'Your analysis is saved. Visit the dashboard to track your benchmarks, access the AI coach, and generate a tailored cover letter.'
+              : 'Sign in to access your detailed analysis history, personalized career coach, and strategic hiring signals.'}
           </p>
           <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', gap: 20 }}>
-            <Btn v="white" sz="lg" pill onClick={() => go('dashboard')} style={{ padding: '16px 40px' }}>
-              Access Dashboard <Icon id="arrow" size={16} />
+            <Btn v="white" sz="lg" pill onClick={user ? () => go('dashboard') : onAuth} style={{ padding: '16px 40px' }}>
+              {user ? 'Access Dashboard' : 'Unlock Everything'} <Icon id="arrow" size={16} />
             </Btn>
           </div>
           <p style={{ marginTop: 24, fontSize: '.75rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em' }}>
-            Military-grade encryption active • Secure PDF parsing
+            {user ? 'Military-grade encryption active • Secure PDF parsing' : 'Quick sign-in available • No credit card required'}
           </p>
         </div>
 
