@@ -82,10 +82,13 @@ const Results = ({ go, user, onAuth, data }) => {
         {/* Header Section */}
         <div className="ru results-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, gap: 24 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <Badge type={score < 60 ? 'red' : 'green'}>
                 <span className="strobe-effect" style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block', marginRight: 4 }} />
                 Neural Scan Active
+              </Badge>
+              <Badge type="ind" sz="xs">
+                {data?.source === 'groq_fallback' ? 'Groq AI' : 'ML Engine'}
               </Badge>
               <span style={{ fontSize: '.75rem', color: 'var(--ts)', fontWeight: 600, letterSpacing: '.02em' }}>{fileName.toUpperCase()}</span>
             </div>
