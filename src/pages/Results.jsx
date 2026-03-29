@@ -237,7 +237,10 @@ const Results = ({ go, user, onAuth, data }) => {
                   <div style={{ width: 12, height: 12, borderRadius: '4px', marginTop: 4, flexShrink: 0, background: iss.sev === 'Critical' ? 'var(--red)' : 'var(--amber)', border: '2px solid #fff', boxShadow: '0 0 0 1px var(--bl)' }} />
                   <div>
                     <p style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--tp)', marginBottom: 6 }}>{iss.label}</p>
-                    <p style={{ fontSize: '.88rem', color: 'var(--ts)', lineHeight: 1.6, fontWeight: 500 }}>{iss.desc}</p>
+                    <p style={{ fontSize: '.88rem', color: 'var(--ts)', lineHeight: 1.6, fontWeight: 500, marginBottom: 8 }}>{iss.desc}</p>
+                    <div style={{ padding: '8px 12px', background: 'var(--s1)', borderRadius: 8, borderLeft: '3px solid var(--ind)' }}>
+                      <p style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--ind)', lineHeight: 1.4 }}>{getSolution(iss.label)}</p>
+                    </div>
                   </div>
                 </div>
               ))}
