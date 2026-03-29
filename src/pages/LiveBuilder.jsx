@@ -283,13 +283,42 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
       doc.setTextColor(0, 0, 0);
       const nameText = (data.name || "").toUpperCase();
       doc.text(nameText, pageWidth / 2, y, { align: 'center' });
-      y += 8;
-      
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(90, 90, 90);
-      const contactText = [data.location, data.email, data.linkedin, data.github].filter(Boolean).join(' | ');
-      doc.text(contactText, pageWidth / 2, y, { align: 'center' });
+      
+      const email = data.email || "";
+      const linkedin = data.linkedin || "";
+      const github = data.github || "";
+      const loc = data.location || "";
+      
+      const parts = [
+        { text: loc, type: 'text' },
+        { text: email, type: 'link', url: `mailto:${email}` },
+        { text: linkedin, type: 'link', url: linkedin.startsWith('http') ? linkedin : `https://${linkedin}` },
+        { text: github, type: 'link', url: github.startsWith('http') ? github : `https://${github}` }
+      ].filter(p => p.text);
+
+      let currentX = pageWidth / 2 - (parts.map(p => doc.getTextWidth(p.text)).reduce((a,b) => a+b, 0) + (parts.length - 1) * 4) / 2;
+      
+      parts.forEach((p, i) => {
+        const w = doc.getTextWidth(p.text);
+        if (p.type === 'link') {
+          doc.setTextColor(0, 102, 204); // subtle link blue
+          doc.text(p.text, currentX, y);
+          doc.link(currentX, y - 3, w, 5, { url: p.url });
+        } else {
+          doc.setTextColor(90, 90, 90);
+          doc.text(p.text, currentX, y);
+        }
+        currentX += w;
+        if (i < parts.length - 1) {
+          doc.setTextColor(90, 90, 90);
+          doc.text(' | ', currentX, y);
+          currentX += doc.getTextWidth(' | ');
+        }
+      });
+
       doc.setTextColor(0, 0, 0);
       y += 14;
 
@@ -743,8 +772,14 @@ const LiveBuilder = ({ go, user, onDataChange }) => {
 
            <div style={{ textAlign: 'center', marginBottom: 35 }}>
               <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 6px', letterSpacing: '-.04em' }}>{(data.name || '').toUpperCase()}</h1>
-              <div style={{ fontSize: '11px', color: '#666' }}>
-                {[data.location, data.email, data.linkedin, data.github].filter(Boolean).join(' | ')}
+              <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'center', gap: 6 }}>
+                {data.location && <span>{data.location}</span>}
+                {data.location && (data.email || data.linkedin || data.github) && <span>|</span>}
+                {data.email && <a href={`mailto:${data.email}`} style={{ color: 'var(--ind)', textDecoration: 'none' }}>{data.email}</a>}
+                {data.email && (data.linkedin || data.github) && <span>|</span>}
+                {data.linkedin && <a href={data.linkedin.startsWith('http') ? data.linkedin : `https://${data.linkedin}`} target="_blank" rel="noreferrer" style={{ color: 'var(--ind)', textDecoration: 'none' }}>LinkedIn</a>}
+                {data.linkedin && data.github && <span>|</span>}
+                {data.github && <a href={data.github.startsWith('http') ? data.github : `https://${data.github}`} target="_blank" rel="noreferrer" style={{ color: 'var(--ind)', textDecoration: 'none' }}>GitHub</a>}
               </div>
            </div>
 
