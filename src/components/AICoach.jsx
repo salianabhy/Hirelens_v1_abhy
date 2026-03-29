@@ -1,5 +1,10 @@
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot, arrayUnion, updateDoc } from 'firebase/firestore';
+import { callGroq } from '../services/ai';
+import Icon from './Icon';
+import Btn from './Btn';
+import FormattedText from './FormattedText';
 
 const SUGGESTIONS = [
   "Why is my ATS score low?",
